@@ -38,6 +38,40 @@ PtBackend *pt_create_backend(PtBackendType type) {
     return NULL;
 }
 
+PtWindow* pt_create_window(const char *title, int width, int height) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->create_window(title, width, height);
+}
+
+void pt_destroy_window(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    active_config->backend->destroy_window(window);
+}
+
+void pt_poll_events(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    active_config->backend->poll_events(window);
+}
+
+void pt_swap_buffers(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    active_config->backend->swap_buffers(window);
+}
+
+PT_BOOL pt_use_gl_context(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+
+    return active_config->backend->use_gl_context(window);
+}
+
 PT_BOOL pt_init(PtConfig *config) {
     PT_ASSERT(config != NULL);
     PT_ASSERT(config->backend != NULL);
@@ -49,6 +83,19 @@ PT_BOOL pt_init(PtConfig *config) {
 
     active_config = config;
     return PT_TRUE;
+}
+
+PT_BOOL pt_backend_supports(PtBackend *backend, PtCapability capability) {
+    PT_ASSERT(backend != NULL);
+
+    return (backend->capabilities & capability) == capability;
+}
+
+PT_BOOL pt_should_window_close(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->should_window_close(window);
 }
 
 void pt_shutdown() {
