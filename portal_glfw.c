@@ -24,8 +24,6 @@ PT_BOOL pt_glfw_init(PtBackend *backend, PtConfig *config) {
     }
 
     config->backend = backend;
-    printf("GLFW init\n");
-
     return PT_TRUE;
 }
 
