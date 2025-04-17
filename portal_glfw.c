@@ -29,7 +29,6 @@ PT_BOOL pt_glfw_init(PtBackend *backend, PtConfig *config) {
         return PT_FALSE;
     }
 
-    config->backend = backend;
     return PT_TRUE;
 }
 
