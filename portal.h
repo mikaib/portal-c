@@ -34,6 +34,7 @@ typedef enum {
 
 typedef struct PtConfig PtConfig;
 typedef struct PtBackend PtBackend;
+typedef struct PtWindow PtWindow;
 
 typedef struct PtBackend {
     PtBackendType type;
@@ -42,11 +43,25 @@ typedef struct PtBackend {
     // core
     PT_BOOL (*init)(PtBackend *backend, PtConfig *config);
     void (*shutdown)(PtBackend *backend);
+
+    // window
+    PtWindow *(*create_window)(const char *title, int width, int height);
+    void (*destroy_window)(PtWindow *window);
+    void (*poll_events)(PtWindow *window);
+    void (*swap_buffers)(PtWindow *window);
+    PT_BOOL (*should_window_close)(PtWindow *window);
+
+    // context
+    PT_BOOL (*use_gl_context)(PtWindow *window);
 } PtBackend;
 
 typedef struct PtConfig {
     PtBackend *backend;
 } PtConfig;
+
+typedef struct PtWindow {
+    void *handle;
+} PtWindow;
 
 // Global
 PT_BOOL pt_init(PtConfig *config);
@@ -60,6 +75,16 @@ void pt_destroy_config(PtConfig *config);
 PtBackend *pt_create_backend(PtBackendType type);
 void pt_destroy_backend(PtBackend *backend);
 PtBackendType pt_get_optimal_backend_type();
+
+// Window
+PtWindow* pt_create_window(const char *title, int width, int height);
+void pt_destroy_window(PtWindow *window);
+void pt_poll_events(PtWindow *window);
+void pt_swap_buffers(PtWindow *window);
+PT_BOOL pt_should_window_close(PtWindow *window);
+
+// context
+PT_BOOL pt_use_gl_context(PtWindow *window);
 
 #ifdef __cplusplus
 }
