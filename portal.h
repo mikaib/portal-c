@@ -25,8 +25,8 @@ extern "C"
 #define PT_FALSE 0
 
 typedef enum {
-    PT_BACKEND_GLFW,
-    PT_BACKEND_ANDROID
+    PT_BACKEND_GLFW = 1,
+    PT_BACKEND_ANDROID = 2,
 } PtBackendType;
 
 typedef enum {

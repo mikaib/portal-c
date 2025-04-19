@@ -3,7 +3,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#ifdef PT_GLFW
 #include "portal_glfw.h"
+#endif
+
+#ifdef PT_ANDROID
+#include "portal_android.h"
+#endif
 
 static PtConfig *active_config = NULL;
 
@@ -22,9 +28,11 @@ void pt_destroy_config(PtConfig *config) {
 }
 
 PtBackendType pt_get_optimal_backend_type() {
-    #if defined(__ANDROID__)
+    #if PT_ANDROID
         return PT_BACKEND_ANDROID;
-    #else
+    #endif
+
+    #if PT_GLFW
         return PT_BACKEND_GLFW;
     #endif
 }
@@ -36,10 +44,15 @@ void pt_destroy_backend(PtBackend *backend) {
 
 PtBackend *pt_create_backend(PtBackendType type) {
     switch (type) {
+        #ifdef PT_GLFW
         case PT_BACKEND_GLFW:
             return pt_glfw_create();
+        #endif
+
+        #ifdef PT_ANDROID
         case PT_BACKEND_ANDROID:
             return pt_android_create();
+        #endif
     }
 
     return NULL;
