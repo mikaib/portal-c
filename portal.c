@@ -22,7 +22,11 @@ void pt_destroy_config(PtConfig *config) {
 }
 
 PtBackendType pt_get_optimal_backend_type() {
-    return PT_BACKEND_GLFW;
+    #if defined(__ANDROID__)
+        return PT_BACKEND_ANDROID;
+    #else
+        return PT_BACKEND_GLFW;
+    #endif
 }
 
 void pt_destroy_backend(PtBackend *backend) {
@@ -31,8 +35,11 @@ void pt_destroy_backend(PtBackend *backend) {
 }
 
 PtBackend *pt_create_backend(PtBackendType type) {
-    if (type == PT_BACKEND_GLFW) {
-        return pt_glfw_create();
+    switch (type) {
+        case PT_BACKEND_GLFW:
+            return pt_glfw_create();
+        case PT_BACKEND_ANDROID:
+            return pt_android_create();
     }
 
     return NULL;
