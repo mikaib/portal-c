@@ -127,57 +127,61 @@ PT_BOOL pt_android_init_egl() {
     return PT_TRUE;
 }
 
+static void pt_android_handle_init(struct android_app* app) {
+    LOGI("APP_CMD_INIT_WINDOW");
+    if (app->window != NULL) {
+        if (android_data == NULL) {
+            android_data = PT_ALLOC(PtAndroidData);
+            memset(android_data, 0, sizeof(PtAndroidData));
+            android_data->display = EGL_NO_DISPLAY;
+            android_data->surface = EGL_NO_SURFACE;
+            android_data->context = EGL_NO_CONTEXT;
+        }
+
+        android_data->native_window = app->window;
+        android_data->activity = app->activity;
+
+        if (android_data->display != EGL_NO_DISPLAY &&
+            android_data->context != EGL_NO_CONTEXT &&
+            android_data->surface == EGL_NO_SURFACE) {
+
+            LOGI("Recreating EGL surface after minimization");
+            android_data->surface = eglCreateWindowSurface(android_data->display,
+                                                         android_data->config,
+                                                         android_data->native_window,
+                                                         NULL);
+
+            if (android_data->surface != EGL_NO_SURFACE) {
+                if (eglMakeCurrent(android_data->display,
+                                android_data->surface,
+                                android_data->surface,
+                                android_data->context)) {
+                    LOGI("EGL context restored successfully");
+                    android_data->initialized = 1;
+                    android_data->pending_surface_destroy = 0;
+                } else {
+                    LOGE("Failed to restore EGL context: %d", eglGetError());
+                }
+            } else {
+                LOGE("Failed to recreate EGL surface: %d", eglGetError());
+            }
+        } else if (!android_data->initialized) {
+            if (pt_android_init_egl()) {
+                LOGI("EGL initialized successfully, calling hxcpp_main");
+                hxcpp_main();
+            } else {
+                LOGE("Failed to initialize EGL");
+            }
+        }
+    }
+}
+
 static void pt_android_handle_cmd(struct android_app* app, int32_t cmd) {
     LOGD("Handling command: %d", cmd);
 
     switch (cmd) {
        case APP_CMD_INIT_WINDOW:
-            LOGI("APP_CMD_INIT_WINDOW");
-            if (app->window != NULL) {
-                if (android_data == NULL) {
-                    android_data = PT_ALLOC(PtAndroidData);
-                    memset(android_data, 0, sizeof(PtAndroidData));
-                    android_data->display = EGL_NO_DISPLAY;
-                    android_data->surface = EGL_NO_SURFACE;
-                    android_data->context = EGL_NO_CONTEXT;
-                }
-
-                android_data->native_window = app->window;
-                android_data->activity = app->activity;
-
-                if (android_data->display != EGL_NO_DISPLAY &&
-                    android_data->context != EGL_NO_CONTEXT &&
-                    android_data->surface == EGL_NO_SURFACE) {
-
-                    LOGI("Recreating EGL surface after minimization");
-                    android_data->surface = eglCreateWindowSurface(android_data->display,
-                                                                 android_data->config,
-                                                                 android_data->native_window,
-                                                                 NULL);
-
-                    if (android_data->surface != EGL_NO_SURFACE) {
-                        if (eglMakeCurrent(android_data->display,
-                                        android_data->surface,
-                                        android_data->surface,
-                                        android_data->context)) {
-                            LOGI("EGL context restored successfully");
-                            android_data->initialized = 1;
-                            android_data->pending_surface_destroy = 0;
-                        } else {
-                            LOGE("Failed to restore EGL context: %d", eglGetError());
-                        }
-                    } else {
-                        LOGE("Failed to recreate EGL surface: %d", eglGetError());
-                    }
-                } else if (!android_data->initialized) {
-                    if (pt_android_init_egl()) {
-                        LOGI("EGL initialized successfully, calling hxcpp_main");
-                        hxcpp_main();
-                    } else {
-                        LOGE("Failed to initialize EGL");
-                    }
-                }
-            }
+            pt_android_handle_init(app);
             break;
 
         case APP_CMD_TERM_WINDOW:
@@ -186,14 +190,6 @@ static void pt_android_handle_cmd(struct android_app* app, int32_t cmd) {
                 android_data->pending_surface_destroy = 1;
                 LOGI("Surface marked for destruction on next swap");
             }
-            break;
-
-        case APP_CMD_GAINED_FOCUS:
-            LOGI("APP_CMD_GAINED_FOCUS");
-            break;
-
-        case APP_CMD_LOST_FOCUS:
-            LOGI("APP_CMD_LOST_FOCUS");
             break;
     }
 }
