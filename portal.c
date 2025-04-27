@@ -53,6 +53,9 @@ PtBackend *pt_create_backend(PtBackendType type) {
         case PT_BACKEND_ANDROID:
             return pt_android_create();
         #endif
+
+        default:
+            printf("Unknown backend type: %d\n", type);
     }
 
     return NULL;
@@ -116,6 +119,20 @@ PT_BOOL pt_should_window_close(PtWindow *window) {
     PT_ASSERT(active_config->backend != NULL);
 
     return active_config->backend->should_window_close(window);
+}
+
+int pt_get_window_width(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_window_width(window);
+}
+
+int pt_get_window_height(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_window_height(window);
 }
 
 void pt_shutdown() {

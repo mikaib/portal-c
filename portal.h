@@ -50,7 +50,14 @@ typedef struct PtBackend {
     void (*destroy_window)(PtWindow *window);
     void (*poll_events)(PtWindow *window);
     void (*swap_buffers)(PtWindow *window);
+    int (*get_window_width)(PtWindow *window);
+    int (*get_window_height)(PtWindow *window);
     PT_BOOL (*should_window_close)(PtWindow *window);
+
+    // lifecycle
+    void (*activate)(PtWindow *window);
+    void (*deactivate)(PtWindow *window);
+    PT_BOOL (*should_be_active)(PtWindow *window);
 
     // context
     PT_BOOL (*use_gl_context)(PtWindow *window);
@@ -82,6 +89,8 @@ PtWindow* pt_create_window(const char *title, int width, int height);
 void pt_destroy_window(PtWindow *window);
 void pt_poll_events(PtWindow *window);
 void pt_swap_buffers(PtWindow *window);
+int pt_get_window_width(PtWindow *window);
+int pt_get_window_height(PtWindow *window);
 PT_BOOL pt_should_window_close(PtWindow *window);
 
 // context

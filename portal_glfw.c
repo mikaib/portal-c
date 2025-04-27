@@ -15,8 +15,13 @@ PtBackend *pt_glfw_create() {
     backend->destroy_window = pt_glfw_destroy_window;
     backend->poll_events = pt_glfw_poll_events;
     backend->swap_buffers = pt_glfw_swap_buffers;
+    backend->get_window_width = pt_glfw_get_window_width;
+    backend->get_window_height = pt_glfw_get_window_height;
     backend->use_gl_context = pt_glfw_use_gl_context;
     backend->should_window_close = pt_glfw_should_window_close;
+    backend->activate = pt_glfw_activate;
+    backend->deactivate = pt_glfw_deactivate;
+    backend->should_be_active = pt_glfw_should_be_active;
 
     return backend;
 }
@@ -78,4 +83,20 @@ PT_BOOL pt_glfw_use_gl_context(PtWindow *window) {
 
     glfwMakeContextCurrent((GLFWwindow*)window->handle);
     return PT_TRUE;
+}
+
+int pt_glfw_get_window_width(PtWindow *window) {
+    PT_ASSERT(window->handle != NULL);
+
+    int width, height;
+    glfwGetWindowSize((GLFWwindow*)window->handle, &width, &height);
+    return width;
+}
+
+int pt_glfw_get_window_height(PtWindow *window) {
+    PT_ASSERT(window->handle != NULL);
+
+    int width, height;
+    glfwGetWindowSize((GLFWwindow*)window->handle, &width, &height);
+    return height;
 }

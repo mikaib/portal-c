@@ -18,6 +18,8 @@ PtWindow* pt_glfw_create_window(const char *title, int width, int height);
 void pt_glfw_destroy_window(PtWindow *window);
 void pt_glfw_poll_events(PtWindow *window);
 void pt_glfw_swap_buffers(PtWindow *window);
+int pt_glfw_get_window_width(PtWindow *window);
+int pt_glfw_get_window_height(PtWindow *window);
 PT_BOOL pt_glfw_should_window_close(PtWindow *window);
 
 // context
