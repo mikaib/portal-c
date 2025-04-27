@@ -13,7 +13,7 @@
 
 extern void hxcpp_main();
 
-#define LOG_TAG "PortalEngine"
+#define LOG_TAG "Portal"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -27,6 +27,7 @@ typedef struct {
     EGLConfig config;
     int should_close;
     int initialized;
+    int pending_surface_destroy;
 } PtAndroidData;
 
 static struct android_app* pt_internal_android_app = NULL;
@@ -68,7 +69,7 @@ PT_BOOL pt_android_init_egl() {
         EGL_GREEN_SIZE, 8,
         EGL_RED_SIZE, 8,
         EGL_ALPHA_SIZE, 8,
-        EGL_DEPTH_SIZE, 16,  // Using 16 for better compatibility
+        EGL_DEPTH_SIZE, 16,
         EGL_STENCIL_SIZE, 8,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_NONE
@@ -122,6 +123,7 @@ PT_BOOL pt_android_init_egl() {
 
     LOGI("EGL initialization successful");
     android_data->initialized = 1;
+    android_data->pending_surface_destroy = 0;
     return PT_TRUE;
 }
 
@@ -160,6 +162,7 @@ static void pt_android_handle_cmd(struct android_app* app, int32_t cmd) {
                                         android_data->context)) {
                             LOGI("EGL context restored successfully");
                             android_data->initialized = 1;
+                            android_data->pending_surface_destroy = 0;
                         } else {
                             LOGE("Failed to restore EGL context: %d", eglGetError());
                         }
@@ -180,16 +183,8 @@ static void pt_android_handle_cmd(struct android_app* app, int32_t cmd) {
         case APP_CMD_TERM_WINDOW:
             LOGI("APP_CMD_TERM_WINDOW");
             if (android_data) {
-                if (android_data->display != EGL_NO_DISPLAY) {
-                    LOGI("Releasing current EGL surface (app minimized)");
-                    eglMakeCurrent(android_data->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-                    if (android_data->surface != EGL_NO_SURFACE) {
-                        eglDestroySurface(android_data->display, android_data->surface);
-                        android_data->surface = EGL_NO_SURFACE;
-                    }
-                }
-                android_data->initialized = 0;
+                android_data->pending_surface_destroy = 1;
+                LOGI("Surface marked for destruction on next swap");
             }
             break;
 
@@ -331,14 +326,33 @@ void pt_android_poll_events(PtWindow *window) {
 void pt_android_swap_buffers(PtWindow *window) {
     PT_ASSERT(window != NULL);
 
-    if (android_data && android_data->display != EGL_NO_DISPLAY &&
-        android_data->surface != EGL_NO_SURFACE) {
-        eglSwapBuffers(android_data->display, android_data->surface);
-    }
+    if (android_data) {
+        if (android_data->display != EGL_NO_DISPLAY && android_data->surface != EGL_NO_SURFACE) {
+            eglSwapBuffers(android_data->display, android_data->surface);
 
-    EGLint error = eglGetError();
-    if (error != EGL_SUCCESS) {
-        LOGE("EGL error: %d", error);
+            if (android_data->pending_surface_destroy) {
+                LOGI("Processing delayed surface destruction after swap");
+                eglMakeCurrent(android_data->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+                if (android_data->surface != EGL_NO_SURFACE) {
+                    eglDestroySurface(android_data->display, android_data->surface);
+                    android_data->surface = EGL_NO_SURFACE;
+                }
+
+                android_data->initialized = 0;
+                android_data->pending_surface_destroy = 0;
+                LOGI("Surface successfully destroyed after final frame");
+
+                while (android_data->initialized == 0) {
+                    pt_android_internal_poll();
+                }
+            }
+        }
+
+        EGLint error = eglGetError();
+        if (error != EGL_SUCCESS) {
+            LOGE("EGL error: %d", error);
+        }
     }
 }
 
@@ -356,7 +370,8 @@ PT_BOOL pt_android_use_gl_context(PtWindow *window) {
     PT_ASSERT(window != NULL);
 
     if (android_data && android_data->display != EGL_NO_DISPLAY &&
-        android_data->context != EGL_NO_CONTEXT) {
+        android_data->context != EGL_NO_CONTEXT &&
+        android_data->surface != EGL_NO_SURFACE) {
         return eglMakeCurrent(android_data->display, android_data->surface,
                              android_data->surface, android_data->context);
     }

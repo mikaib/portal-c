@@ -19,9 +19,6 @@ PtBackend *pt_glfw_create() {
     backend->get_window_height = pt_glfw_get_window_height;
     backend->use_gl_context = pt_glfw_use_gl_context;
     backend->should_window_close = pt_glfw_should_window_close;
-    backend->activate = pt_glfw_activate;
-    backend->deactivate = pt_glfw_deactivate;
-    backend->should_be_active = pt_glfw_should_be_active;
 
     return backend;
 }
