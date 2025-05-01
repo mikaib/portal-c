@@ -59,6 +59,11 @@ typedef enum {
 typedef struct PtConfig PtConfig;
 typedef struct PtBackend PtBackend;
 typedef struct PtWindow PtWindow;
+typedef struct PtInputEventKeyData PtInputEventKeyData;
+typedef struct PtInputEventMouseData PtInputEventMouseData;
+typedef struct PtInputEventTouchData PtInputEventTouchData;
+typedef struct PtInputEventTextData PtInputEventTextData;
+typedef struct PtInputEventData PtInputEventData;
 
 typedef struct PtBackend {
     PtBackendType type;
@@ -94,6 +99,39 @@ typedef struct PtConfig {
 typedef struct PtWindow {
     void *handle;
 } PtWindow;
+
+typedef struct PtInputEventData {
+    PtInputEventType type;
+    PtInputEventKeyData *key;
+    PtInputEventMouseData *mouse;
+    PtInputEventTouchData *touch;
+    PtInputEventTextData *text;
+    double timestamp;
+} PtInputEventData;
+
+typedef struct PtInputEventKeyData {
+    int key;
+    int modifiers;
+} PtInputEventKeyData;
+
+typedef struct PtInputEventMouseData {
+    int button;
+    int modifiers;
+    int x;
+    int y;
+    int dx;
+    int dy;
+} PtInputEventMouseData;
+
+typedef struct PtInputEventTouchData {
+    int finger;
+    int x;
+    int y;
+} PtInputEventTouchData;
+
+typedef struct PtInputEventTextData {
+    char *text;
+} PtInputEventTextData;
 
 // Global
 PT_BOOL pt_init(PtConfig *config);
