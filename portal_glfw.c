@@ -8,6 +8,7 @@ PtBackend *pt_glfw_create() {
     PtBackend *backend = PT_ALLOC(PtBackend);
     backend->type = PT_BACKEND_GLFW;
     backend->capabilities = PT_CAPABILITY_CREATE_WINDOW;
+    backend->kind = PT_BACKEND_KIND_DESKTOP;
 
     backend->init = pt_glfw_init;
     backend->shutdown = pt_glfw_shutdown;

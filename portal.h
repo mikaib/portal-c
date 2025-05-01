@@ -30,8 +30,31 @@ typedef enum {
 } PtBackendType;
 
 typedef enum {
+    PT_BACKEND_KIND_DESKTOP = 1,
+    PT_BACKEND_KIND_MOBILE = 2,
+} PtBackendKind;
+
+typedef enum {
     PT_CAPABILITY_CREATE_WINDOW = 1 << 0,
 } PtCapability;
+
+typedef enum {
+    // Keyboard (Does work on mobile but requires explicitly requesting a keyboard)
+    PT_INPUT_EVENT_KEYUP = 1,         // { key: PtKey, modifiers: PtModifier }
+    PT_INPUT_EVENT_KEYDOWN = 2,       // { key: PtKey, modifiers: PtModifier }
+    PT_INPUT_EVENT_TEXT = 3,          // { text: char* }
+
+    // Mouse (Desktop platforms or PT_TOUCH_EMULATE_MOUSE flag)
+    PT_INPUT_EVENT_MOUSEUP = 3,       // { button: PtMouseButton, modifiers: PtModifier }
+    PT_INPUT_EVENT_MOUSEDOWN = 4,     // { button: PtMouseButton, modifiers: PtModifier }
+    PT_INPUT_EVENT_MOUSEMOVE = 5,     // { x: int, y: int, dx: int, dy: int }
+    PT_INPUT_EVENT_MOUSEWHEEL = 6,    // { x: int, y: int, dx: int, dy: int }
+
+    // Touch (Mobile platforms or PT_MOUSE_EMULATE_TOUCH flag)
+    PT_INPUT_EVENT_TOUCHUP = 7,       // { finger: int, x: int, y: int }
+    PT_INPUT_EVENT_TOUCHDOWN = 8,     // { finger: int, x: int, y: int }
+    PT_INPUT_EVENT_TOUCHMOVE = 9,     // { finger: int, x: int, y: int }
+} PtInputEventType;
 
 typedef struct PtConfig PtConfig;
 typedef struct PtBackend PtBackend;
@@ -39,6 +62,7 @@ typedef struct PtWindow PtWindow;
 
 typedef struct PtBackend {
     PtBackendType type;
+    PtBackendKind kind;
     PtCapability capabilities;
 
     // core

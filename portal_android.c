@@ -267,6 +267,7 @@ void pt_android_set_native_window(ANativeWindow *native_window, ANativeActivity 
 PtBackend *pt_android_create() {
     PtBackend *backend = PT_ALLOC(PtBackend);
     backend->type = PT_BACKEND_ANDROID;
+    backend->kind = PT_BACKEND_KIND_MOBILE;
     backend->capabilities = PT_CAPABILITY_CREATE_WINDOW;
 
     backend->init = pt_android_init;
