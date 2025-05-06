@@ -61,6 +61,63 @@ PtBackend *pt_create_backend(PtBackendType type) {
     return NULL;
 }
 
+int pt_get_input_event_count(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->input_event_count;
+}
+
+PtInputEventData pt_create_input_event_data() {
+    PtInputEventData event;
+
+    event.type = PT_INPUT_EVENT_NONE;
+    event.mouse.button = 0;
+    event.mouse.x = 0;
+    event.mouse.y = 0;
+    event.mouse.dx = 0;
+    event.mouse.dy = 0;
+    event.mouse.modifiers = 0;
+    event.key.key = 0;
+    event.key.modifiers = 0;
+    event.touch.finger = 0;
+    event.touch.x = 0;
+    event.touch.y = 0;
+    event.text.codepoint = NULL;
+    event.timestamp = 0.0;
+
+    return event;
+}
+
+PtInputEventData pt_pull_input_event(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    if (active_config->backend->input_event_count > 0) {
+        PtInputEventData event = active_config->backend->input_events[0];
+
+        for (int i = 1; i < active_config->backend->input_event_count; i++) {
+            active_config->backend->input_events[i - 1] = active_config->backend->input_events[i];
+        }
+
+        active_config->backend->input_event_count--;
+        return event;
+    }
+
+    return pt_create_input_event_data();
+}
+
+void pt_push_input_event(PtWindow *window, PtInputEventData event) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    if (active_config->backend->input_event_count >= PT_MAX_EVENT_COUNT) {
+        return;
+    }
+
+    active_config->backend->input_events[active_config->backend->input_event_count++] = event;
+}
+
 PtWindow* pt_create_window(const char *title, int width, int height) {
     PT_ASSERT(active_config != NULL);
     PT_ASSERT(active_config->backend != NULL);

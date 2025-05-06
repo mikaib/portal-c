@@ -22,6 +22,13 @@ int pt_glfw_get_window_width(PtWindow *window);
 int pt_glfw_get_window_height(PtWindow *window);
 PT_BOOL pt_glfw_should_window_close(PtWindow *window);
 
+// callbacks
+void pt_glfw_cb_mouse_button(PtWindow *window, int button, int action);
+void pt_glfw_cb_mouse_move(PtWindow *window, double x, double y);
+void pt_glfw_cb_mouse_scroll(PtWindow *window, double x, double y);
+void pt_glfw_cb_key(PtWindow *window, int key, int scancode, int action);
+void pt_glfw_cb_char(PtWindow *window, unsigned int codepoint);
+
 // context
 PT_BOOL pt_glfw_use_gl_context(PtWindow *window);
 

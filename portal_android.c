@@ -5,6 +5,7 @@
 #include <android/native_activity.h>
 #include <android_native_app_glue.h>
 #include <android/log.h>
+#include <android/input.h>
 #include <EGL/egl.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -184,7 +185,7 @@ static void pt_android_handle_cmd(struct android_app* app, int32_t cmd) {
             pt_android_handle_init(app);
             break;
 
-        case APP_CMD_TERM_WINDOW:
+       case APP_CMD_TERM_WINDOW:
             LOGI("APP_CMD_TERM_WINDOW");
             if (android_data) {
                 android_data->pending_surface_destroy = 1;
@@ -213,6 +214,7 @@ void android_main(struct android_app* app) {
     LOGI("Android main entered");
 
     app->onAppCmd = pt_android_handle_cmd;
+    app->onInputEvent = pt_android_handle_input;
     pt_internal_android_app = app;
 
     while (!app->destroyRequested) {
@@ -239,6 +241,51 @@ void android_main(struct android_app* app) {
     }
 
     LOGI("Android main exiting");
+}
+
+int pt_android_handle_input(struct android_app* app, AInputEvent* event) {
+    if (AInputEvent_getType(event) != AINPUT_EVENT_TYPE_MOTION) return 0;
+
+    int32_t action = AMotionEvent_getAction(event);
+    int32_t pointerIndex = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+    int32_t pointerId = AMotionEvent_getPointerId(event, pointerIndex);
+    float x = AMotionEvent_getX(event, pointerIndex);
+    float y = AMotionEvent_getY(event, pointerIndex);
+
+    PtWindow* window = (PtWindow*)app->userData;
+    PT_ASSERT(window != NULL);
+
+    PtInputEventData ptEvent = pt_create_input_event_data();
+    ptEvent.touch.finger = pointerId;
+    ptEvent.touch.x = (int)x;
+    ptEvent.touch.y = (int)y;
+
+    switch (action & AMOTION_EVENT_ACTION_MASK) {
+        case AMOTION_EVENT_ACTION_DOWN:
+        case AMOTION_EVENT_ACTION_POINTER_DOWN:
+            ptEvent.type = PT_INPUT_EVENT_TOUCHDOWN;
+            break;
+        case AMOTION_EVENT_ACTION_UP:
+        case AMOTION_EVENT_ACTION_POINTER_UP:
+            ptEvent.type = PT_INPUT_EVENT_TOUCHUP;
+            break;
+        case AMOTION_EVENT_ACTION_MOVE:
+            ptEvent.type = PT_INPUT_EVENT_TOUCHMOVE;
+            for (size_t i = 0; i < AMotionEvent_getPointerCount(event); ++i) {
+                PtInputEventData moveEvent = pt_create_input_event_data();
+                moveEvent.type = PT_INPUT_EVENT_TOUCHMOVE;
+                moveEvent.touch.finger = AMotionEvent_getPointerId(event, i);
+                moveEvent.touch.x = (int)AMotionEvent_getX(event, i);
+                moveEvent.touch.y = (int)AMotionEvent_getY(event, i);
+                pt_push_input_event(window, moveEvent);
+            }
+            return 1;
+        default:
+            return 0;
+    }
+
+    pt_push_input_event(window, ptEvent);
+    return 1;
 }
 
 void pt_android_set_native_window(ANativeWindow *native_window, ANativeActivity *activity) {
@@ -269,6 +316,7 @@ PtBackend *pt_android_create() {
     backend->type = PT_BACKEND_ANDROID;
     backend->kind = PT_BACKEND_KIND_MOBILE;
     backend->capabilities = PT_CAPABILITY_CREATE_WINDOW;
+    backend->input_event_count = 0;
 
     backend->init = pt_android_init;
     backend->shutdown = pt_android_shutdown;
@@ -302,6 +350,7 @@ PtWindow* pt_android_create_window(const char *title, int width, int height) {
     PtWindow *window = PT_ALLOC(PtWindow);
 
     window->handle = android_data;
+    pt_internal_android_app->userData = window;
 
     return window;
 }

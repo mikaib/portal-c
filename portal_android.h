@@ -4,6 +4,8 @@
 #include "portal.h"
 #include <android/native_window.h>
 #include <android/native_activity.h>
+#include <android_native_app_glue.h>
+#include <android/input.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -33,6 +35,7 @@ PT_BOOL pt_android_init_egl();
 void pt_android_handle_surface_changed(int width, int height);
 void pt_android_set_should_close(int should_close);
 void pt_android_internal_poll();
+int pt_android_handle_input(struct android_app* app, AInputEvent* event);
 
 #ifdef __cplusplus
 }

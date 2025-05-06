@@ -24,6 +24,8 @@ extern "C"
 #define PT_TRUE 1
 #define PT_FALSE 0
 
+#define PT_MAX_EVENT_COUNT 256
+
 typedef enum {
     PT_BACKEND_GLFW = 1,
     PT_BACKEND_ANDROID = 2,
@@ -39,21 +41,25 @@ typedef enum {
 } PtCapability;
 
 typedef enum {
+    // None
+    PT_INPUT_EVENT_NONE = 0,
+
     // Keyboard (Does work on mobile but requires explicitly requesting a keyboard)
     PT_INPUT_EVENT_KEYUP = 1,         // { key: PtKey, modifiers: PtModifier }
     PT_INPUT_EVENT_KEYDOWN = 2,       // { key: PtKey, modifiers: PtModifier }
-    PT_INPUT_EVENT_TEXT = 3,          // { text: char* }
+    PT_INPUT_EVENT_KEYPRESS = 3,      // { key: PtKey, modifiers: PtModifier }
+    PT_INPUT_EVENT_TEXT = 4,          // { text: char* }
 
-    // Mouse (Desktop platforms or PT_TOUCH_EMULATE_MOUSE flag)
-    PT_INPUT_EVENT_MOUSEUP = 3,       // { button: PtMouseButton, modifiers: PtModifier }
-    PT_INPUT_EVENT_MOUSEDOWN = 4,     // { button: PtMouseButton, modifiers: PtModifier }
-    PT_INPUT_EVENT_MOUSEMOVE = 5,     // { x: int, y: int, dx: int, dy: int }
-    PT_INPUT_EVENT_MOUSEWHEEL = 6,    // { x: int, y: int, dx: int, dy: int }
+    // Mouse
+    PT_INPUT_EVENT_MOUSEUP = 100,       // { button: PtMouseButton, modifiers: PtModifier }
+    PT_INPUT_EVENT_MOUSEDOWN = 101,     // { button: PtMouseButton, modifiers: PtModifier }
+    PT_INPUT_EVENT_MOUSEMOVE = 102,     // { x: int, y: int, dx: int, dy: int }
+    PT_INPUT_EVENT_MOUSEWHEEL = 103,    // { x: int, y: int, dx: int, dy: int }
 
-    // Touch (Mobile platforms or PT_MOUSE_EMULATE_TOUCH flag)
-    PT_INPUT_EVENT_TOUCHUP = 7,       // { finger: int, x: int, y: int }
-    PT_INPUT_EVENT_TOUCHDOWN = 8,     // { finger: int, x: int, y: int }
-    PT_INPUT_EVENT_TOUCHMOVE = 9,     // { finger: int, x: int, y: int }
+    // Touch
+    PT_INPUT_EVENT_TOUCHUP = 200,       // { finger: int, x: int, y: int }
+    PT_INPUT_EVENT_TOUCHDOWN = 201,     // { finger: int, x: int, y: int }
+    PT_INPUT_EVENT_TOUCHMOVE = 202,     // { finger: int, x: int, y: int }
 } PtInputEventType;
 
 typedef struct PtConfig PtConfig;
@@ -65,10 +71,53 @@ typedef struct PtInputEventTouchData PtInputEventTouchData;
 typedef struct PtInputEventTextData PtInputEventTextData;
 typedef struct PtInputEventData PtInputEventData;
 
+typedef struct PtConfig {
+    PtBackend *backend;
+} PtConfig;
+
+typedef struct PtWindow {
+    void *handle;
+} PtWindow;
+
+typedef struct PtInputEventKeyData {
+    int key;
+    int modifiers;
+} PtInputEventKeyData;
+
+typedef struct PtInputEventMouseData {
+    int button;
+    int modifiers;
+    int x;
+    int y;
+    int dx;
+    int dy;
+} PtInputEventMouseData;
+
+typedef struct PtInputEventTouchData {
+    int finger;
+    int x;
+    int y;
+} PtInputEventTouchData;
+
+typedef struct PtInputEventTextData {
+    unsigned int codepoint;
+} PtInputEventTextData;
+
+typedef struct PtInputEventData {
+    PtInputEventType type;
+    PtInputEventKeyData key;
+    PtInputEventMouseData mouse;
+    PtInputEventTouchData touch;
+    PtInputEventTextData text;
+    double timestamp;
+} PtInputEventData;
+
 typedef struct PtBackend {
     PtBackendType type;
     PtBackendKind kind;
     PtCapability capabilities;
+    PtInputEventData input_events[PT_MAX_EVENT_COUNT];
+    int input_event_count;
 
     // core
     PT_BOOL (*init)(PtBackend *backend, PtConfig *config);
@@ -92,47 +141,6 @@ typedef struct PtBackend {
     PT_BOOL (*use_gl_context)(PtWindow *window);
 } PtBackend;
 
-typedef struct PtConfig {
-    PtBackend *backend;
-} PtConfig;
-
-typedef struct PtWindow {
-    void *handle;
-} PtWindow;
-
-typedef struct PtInputEventData {
-    PtInputEventType type;
-    PtInputEventKeyData *key;
-    PtInputEventMouseData *mouse;
-    PtInputEventTouchData *touch;
-    PtInputEventTextData *text;
-    double timestamp;
-} PtInputEventData;
-
-typedef struct PtInputEventKeyData {
-    int key;
-    int modifiers;
-} PtInputEventKeyData;
-
-typedef struct PtInputEventMouseData {
-    int button;
-    int modifiers;
-    int x;
-    int y;
-    int dx;
-    int dy;
-} PtInputEventMouseData;
-
-typedef struct PtInputEventTouchData {
-    int finger;
-    int x;
-    int y;
-} PtInputEventTouchData;
-
-typedef struct PtInputEventTextData {
-    char *text;
-} PtInputEventTextData;
-
 // Global
 PT_BOOL pt_init(PtConfig *config);
 void pt_shutdown();
@@ -154,6 +162,12 @@ void pt_swap_buffers(PtWindow *window);
 int pt_get_window_width(PtWindow *window);
 int pt_get_window_height(PtWindow *window);
 PT_BOOL pt_should_window_close(PtWindow *window);
+
+// events
+int pt_get_input_event_count(PtWindow *window);
+void pt_push_input_event(PtWindow *window, PtInputEventData event);
+PtInputEventData pt_pull_input_event(PtWindow *window);
+PtInputEventData pt_create_input_event_data();
 
 // context
 PT_BOOL pt_use_gl_context(PtWindow *window);
