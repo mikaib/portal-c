@@ -326,6 +326,8 @@ PtBackend *pt_android_create() {
     backend->swap_buffers = pt_android_swap_buffers;
     backend->get_window_width = pt_android_get_window_width;
     backend->get_window_height = pt_android_get_window_height;
+    backend->get_framebuffer_width = pt_android_get_window_width;
+    backend->get_framebuffer_height = pt_android_get_window_height;
     backend->use_gl_context = pt_android_use_gl_context;
     backend->should_window_close = pt_android_should_window_close;
 
@@ -446,6 +448,26 @@ int pt_android_get_window_width(PtWindow *window) {
 }
 
 int pt_android_get_window_height(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+
+    if (android_data && android_data->native_window) {
+        return ANativeWindow_getHeight(android_data->native_window);
+    }
+
+    return 0;
+}
+
+int pt_android_get_framebuffer_width(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+
+    if (android_data && android_data->native_window) {
+        return ANativeWindow_getWidth(android_data->native_window);
+    }
+
+    return 0;
+}
+
+int pt_android_get_framebuffer_height(PtWindow *window) {
     PT_ASSERT(window != NULL);
 
     if (android_data && android_data->native_window) {

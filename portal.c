@@ -83,7 +83,7 @@ PtInputEventData pt_create_input_event_data() {
     event.touch.finger = 0;
     event.touch.x = 0;
     event.touch.y = 0;
-    event.text.codepoint = NULL;
+    event.text.codepoint = 0;
     event.timestamp = 0.0;
 
     return event;
@@ -190,6 +190,20 @@ int pt_get_window_height(PtWindow *window) {
     PT_ASSERT(active_config->backend != NULL);
 
     return active_config->backend->get_window_height(window);
+}
+
+int pt_get_framebuffer_width(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_framebuffer_width(window);
+}
+
+int pt_get_framebuffer_height(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_framebuffer_height(window);
 }
 
 void pt_shutdown() {

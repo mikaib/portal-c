@@ -24,6 +24,8 @@ void pt_android_poll_events(PtWindow *window);
 void pt_android_swap_buffers(PtWindow *window);
 int pt_android_get_window_width(PtWindow *window);
 int pt_android_get_window_height(PtWindow *window);
+int pt_android_get_framebuffer_width(PtWindow *window);
+int pt_android_get_framebuffer_height(PtWindow *window);
 PT_BOOL pt_android_should_window_close(PtWindow *window);
 
 // context

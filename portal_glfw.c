@@ -19,6 +19,8 @@ PtBackend *pt_glfw_create() {
     backend->swap_buffers = pt_glfw_swap_buffers;
     backend->get_window_width = pt_glfw_get_window_width;
     backend->get_window_height = pt_glfw_get_window_height;
+    backend->get_framebuffer_width = pt_glfw_get_framebuffer_width;
+    backend->get_framebuffer_height = pt_glfw_get_framebuffer_height;
     backend->use_gl_context = pt_glfw_use_gl_context;
     backend->should_window_close = pt_glfw_should_window_close;
 
@@ -165,5 +167,21 @@ int pt_glfw_get_window_height(PtWindow *window) {
 
     int width, height;
     glfwGetWindowSize((GLFWwindow*)window->handle, &width, &height);
+    return height;
+}
+
+int pt_glfw_get_framebuffer_width(PtWindow *window) {
+    PT_ASSERT(window->handle != NULL);
+
+    int width, height;
+    glfwGetFramebufferSize((GLFWwindow*)window->handle, &width, &height);
+    return width;
+}
+
+int pt_glfw_get_framebuffer_height(PtWindow *window) {
+    PT_ASSERT(window->handle != NULL);
+
+    int width, height;
+    glfwGetFramebufferSize((GLFWwindow*)window->handle, &width, &height);
     return height;
 }
