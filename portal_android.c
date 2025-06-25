@@ -72,7 +72,7 @@ PT_BOOL pt_android_init_egl() {
         EGL_ALPHA_SIZE, 8,
         EGL_DEPTH_SIZE, 16,
         EGL_STENCIL_SIZE, 8,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
         EGL_NONE
     };
 
@@ -90,7 +90,8 @@ PT_BOOL pt_android_init_egl() {
     LOGI("Found %d matching EGL configs", num_configs);
 
     const EGLint context_attribs[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_CONTEXT_CLIENT_VERSION, 3,
+        EGL_CONTEXT_MINOR_VERSION, 2,
         EGL_NONE
     };
 
