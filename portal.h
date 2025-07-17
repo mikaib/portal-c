@@ -27,13 +27,15 @@ extern "C"
 #define PT_MAX_EVENT_COUNT 256
 
 typedef enum {
-    PT_BACKEND_GLFW = 1,
-    PT_BACKEND_ANDROID = 2,
+    PT_BACKEND_NOOP = 1,
+    PT_BACKEND_GLFW = 2,
+    PT_BACKEND_ANDROID = 3,
 } PtBackendType;
 
 typedef enum {
     PT_BACKEND_KIND_DESKTOP = 1,
     PT_BACKEND_KIND_MOBILE = 2,
+    PT_BACKEND_KIND_HEADLESS = 3
 } PtBackendKind;
 
 typedef enum {

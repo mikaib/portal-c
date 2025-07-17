@@ -1,4 +1,5 @@
 #include "portal.h"
+#include "portal_noop.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,6 +36,8 @@ PtBackendType pt_get_optimal_backend_type() {
     #if PT_GLFW
         return PT_BACKEND_GLFW;
     #endif
+
+    return PT_BACKEND_NOOP;
 }
 
 void pt_destroy_backend(PtBackend *backend) {
@@ -53,6 +56,9 @@ PtBackend *pt_create_backend(PtBackendType type) {
         case PT_BACKEND_ANDROID:
             return pt_android_create();
         #endif
+
+        case PT_BACKEND_NOOP:
+            return pt_noop_create();
 
         default:
             printf("Unknown backend type: %d\n", type);
