@@ -69,6 +69,10 @@ static PT_BOOL pt_noop_should_window_close(PtWindow *window) {
     return noop->should_close;
 }
 
+int pt_noop_offset_zero(PtWindow *window) {
+    return 0;
+}
+
 PtBackend* pt_noop_create() {
     PtBackend *backend = PT_ALLOC(PtBackend);
     backend->type = PT_BACKEND_NOOP;
@@ -85,6 +89,10 @@ PtBackend* pt_noop_create() {
     backend->get_window_height = pt_noop_get_window_height;
     backend->get_framebuffer_width = pt_noop_get_framebuffer_width;
     backend->get_framebuffer_height = pt_noop_get_framebuffer_height;
+    backend->get_usable_width = pt_noop_get_framebuffer_width;
+    backend->get_usable_height = pt_noop_get_framebuffer_height;
+    backend->get_usable_xoffset = pt_noop_offset_zero;
+    backend->get_usable_yoffset = pt_noop_offset_zero;
     backend->use_gl_context = pt_noop_use_gl_context;
     backend->should_window_close = pt_noop_should_window_close;
 

@@ -32,6 +32,10 @@ typedef struct {
     int pending_surface_destroy;
     int display_width;
     int display_height;
+    int usable_width;
+    int usable_height;
+    int usable_x_offset;
+    int usable_y_offset;
 } PtAndroidData;
 
 static struct android_app* pt_internal_android_app = NULL;
@@ -109,57 +113,6 @@ static void pt_android_configure_fullscreen() {
     (*env)->DeleteLocalRef(env, runnableClass);
     (*env)->DeleteLocalRef(env, activityClass);
     (*activity->vm)->DetachCurrentThread(activity->vm);
-}
-
-static void pt_android_configure_window_flags_only(JNIEnv* env, jobject window) {
-    jclass windowClass = (*env)->GetObjectClass(env, window);
-
-    jclass layoutParamsClass = (*env)->FindClass(env, "android/view/WindowManager$LayoutParams");
-    jfieldID flagFullscreenField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_FULLSCREEN", "I");
-    jfieldID flagLayoutNoLimitsField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_LAYOUT_NO_LIMITS", "I");
-    jfieldID flagKeepScreenOnField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_KEEP_SCREEN_ON", "I");
-    jfieldID flagHardwareAccelField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_HARDWARE_ACCELERATED", "I");
-
-    jint flagFullscreen = (*env)->GetStaticIntField(env, layoutParamsClass, flagFullscreenField);
-    jint flagKeepScreenOn = (*env)->GetStaticIntField(env, layoutParamsClass, flagKeepScreenOnField);
-    jint flagHardwareAccel = (*env)->GetStaticIntField(env, layoutParamsClass, flagHardwareAccelField);
-    jint flagLayoutNoLimits = 0;
-
-    if (flagLayoutNoLimitsField != NULL) {
-        flagLayoutNoLimits = (*env)->GetStaticIntField(env, layoutParamsClass, flagLayoutNoLimitsField);
-        LOGI("Layout no limits flag available: 0x%x", flagLayoutNoLimits);
-    }
-
-    jfieldID layoutInDisplayCutoutField = (*env)->GetStaticFieldID(env, layoutParamsClass, "LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS", "I");
-    if (layoutInDisplayCutoutField != NULL && !(*env)->ExceptionCheck(env)) {
-        jmethodID getAttributesMethod = (*env)->GetMethodID(env, windowClass, "getAttributes", "()Landroid/view/WindowManager$LayoutParams;");
-        jobject layoutParams = (*env)->CallObjectMethod(env, window, getAttributesMethod);
-
-        if (layoutParams != NULL && !(*env)->ExceptionCheck(env)) {
-            jfieldID layoutInDisplayCutoutModeField = (*env)->GetFieldID(env, layoutParamsClass, "layoutInDisplayCutoutMode", "I");
-            if (layoutInDisplayCutoutModeField != NULL && !(*env)->ExceptionCheck(env)) {
-                jint layoutInDisplayCutout = (*env)->GetStaticIntField(env, layoutParamsClass, layoutInDisplayCutoutField);
-                (*env)->SetIntField(env, layoutParams, layoutInDisplayCutoutModeField, layoutInDisplayCutout);
-
-                jmethodID setAttributesMethod = (*env)->GetMethodID(env, windowClass, "setAttributes", "(Landroid/view/WindowManager$LayoutParams;)V");
-                (*env)->CallVoidMethod(env, window, setAttributesMethod, layoutParams);
-                LOGI("Applied display cutout mode");
-            }
-            (*env)->DeleteLocalRef(env, layoutParams);
-        }
-    }
-
-    if ((*env)->ExceptionCheck(env)) {
-        (*env)->ExceptionClear(env);
-    }
-
-    jmethodID addFlagsMethod = (*env)->GetMethodID(env, windowClass, "addFlags", "(I)V");
-    jint combinedFlags = flagFullscreen | flagKeepScreenOn | flagHardwareAccel | flagLayoutNoLimits;
-    (*env)->CallVoidMethod(env, window, addFlagsMethod, combinedFlags);
-    LOGI("Applied window flags: 0x%x", combinedFlags);
-
-    (*env)->DeleteLocalRef(env, windowClass);
-    (*env)->DeleteLocalRef(env, layoutParamsClass);
 }
 
 static void pt_android_configure_fullscreen_direct(JNIEnv* env, jobject activityObject, jclass activityClass) {
@@ -390,6 +343,54 @@ PT_BOOL pt_android_init_egl() {
     return PT_TRUE;
 }
 
+static void pt_android_configure_window_flags_only(JNIEnv* env, jobject window) {
+    jclass windowClass = (*env)->GetObjectClass(env, window);
+
+    jclass layoutParamsClass = (*env)->FindClass(env, "android/view/WindowManager$LayoutParams");
+    jfieldID flagFullscreenField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_FULLSCREEN", "I");
+    jfieldID flagLayoutNoLimitsField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_LAYOUT_NO_LIMITS", "I");
+    jfieldID flagKeepScreenOnField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_KEEP_SCREEN_ON", "I");
+    jfieldID flagHardwareAccelField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_HARDWARE_ACCELERATED", "I");
+
+    jint flagFullscreen = (*env)->GetStaticIntField(env, layoutParamsClass, flagFullscreenField);
+    jint flagKeepScreenOn = (*env)->GetStaticIntField(env, layoutParamsClass, flagKeepScreenOnField);
+    jint flagHardwareAccel = (*env)->GetStaticIntField(env, layoutParamsClass, flagHardwareAccelField);
+    jint flagLayoutNoLimits = 0;
+
+    if (flagLayoutNoLimitsField != NULL) {
+        flagLayoutNoLimits = (*env)->GetStaticIntField(env, layoutParamsClass, flagLayoutNoLimitsField);
+        LOGI("Layout no limits flag available: 0x%x", flagLayoutNoLimits);
+    }
+
+    jfieldID layoutInDisplayCutoutField = (*env)->GetStaticFieldID(env, layoutParamsClass, "LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS", "I");
+    if (layoutInDisplayCutoutField != NULL && !(*env)->ExceptionCheck(env)) {
+        jmethodID getAttributesMethod = (*env)->GetMethodID(env, windowClass, "getAttributes", "()Landroid/view/WindowManager$LayoutParams;");
+        jobject layoutParams = (*env)->CallObjectMethod(env, window, getAttributesMethod);
+
+        if (layoutParams != NULL && !(*env)->ExceptionCheck(env)) {
+            jfieldID layoutInDisplayCutoutModeField = (*env)->GetFieldID(env, layoutParamsClass, "layoutInDisplayCutoutMode", "I");
+            if (layoutInDisplayCutoutModeField != NULL && !(*env)->ExceptionCheck(env)) {
+                jint layoutInDisplayCutout = (*env)->GetStaticIntField(env, layoutParamsClass, layoutInDisplayCutoutField);
+                (*env)->SetIntField(env, layoutParams, layoutInDisplayCutoutModeField, layoutInDisplayCutout);
+                LOGI("Applied display cutout mode");
+            }
+            (*env)->DeleteLocalRef(env, layoutParams);
+        }
+    }
+
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+    }
+
+    jmethodID addFlagsMethod = (*env)->GetMethodID(env, windowClass, "addFlags", "(I)V");
+    jint combinedFlags = flagFullscreen | flagKeepScreenOn | flagHardwareAccel | flagLayoutNoLimits;
+    (*env)->CallVoidMethod(env, window, addFlagsMethod, combinedFlags);
+    LOGI("Applied window flags: 0x%x", combinedFlags);
+
+    (*env)->DeleteLocalRef(env, windowClass);
+    (*env)->DeleteLocalRef(env, layoutParamsClass);
+}
+
 static void pt_android_handle_init(struct android_app* app) {
     LOGI("APP_CMD_INIT_WINDOW");
     if (app->window != NULL) {
@@ -412,7 +413,6 @@ static void pt_android_handle_init(struct android_app* app) {
 
             LOGI("Recreating EGL surface after minimization");
 
-            pt_android_configure_fullscreen();
             pt_android_get_real_display_size();
 
             android_data->surface = eglCreateWindowSurface(android_data->display,
@@ -598,6 +598,10 @@ PtBackend *pt_android_create() {
     backend->get_window_height = pt_android_get_window_height;
     backend->get_framebuffer_width = pt_android_get_framebuffer_width;
     backend->get_framebuffer_height = pt_android_get_framebuffer_height;
+    backend->get_usable_width = pt_android_get_usable_framebuffer_width;
+    backend->get_usable_height = pt_android_get_usable_framebuffer_height;
+    backend->get_usable_xoffset = pt_android_get_usable_framebuffer_xoffset;
+    backend->get_usable_yoffset = pt_android_get_usable_framebuffer_yoffset;
     backend->use_gl_context = pt_android_use_gl_context;
     backend->should_window_close = pt_android_should_window_close;
 
@@ -745,4 +749,155 @@ int pt_android_get_framebuffer_width(PtWindow *window) {
 
 int pt_android_get_framebuffer_height(PtWindow *window) {
     return pt_android_get_window_height(window);
+}
+
+static void pt_android_get_display_cutout_info() {
+    if (android_data == NULL || android_data->activity == NULL) {
+        LOGE("no activity");
+        return;
+    }
+
+    android_data->usable_width = android_data->display_width;
+    android_data->usable_height = android_data->display_height;
+    android_data->usable_x_offset = 0;
+    android_data->usable_y_offset = 0;
+
+    ANativeActivity* activity = android_data->activity;
+    JNIEnv* env = NULL;
+
+    (*activity->vm)->AttachCurrentThread(activity->vm, &env, NULL);
+    if (env == NULL) {
+        LOGE("Failed to get JNI environment for cutout info");
+        return;
+    }
+
+    jobject activityObject = activity->clazz;
+    jclass activityClass = (*env)->GetObjectClass(env, activityObject);
+
+    jmethodID getWindowMethod = (*env)->GetMethodID(env, activityClass, "getWindow", "()Landroid/view/Window;");
+    jobject window = (*env)->CallObjectMethod(env, activityObject, getWindowMethod);
+
+    if (window != NULL) {
+        jclass windowClass = (*env)->GetObjectClass(env, window);
+        jmethodID getDecorViewMethod = (*env)->GetMethodID(env, windowClass, "getDecorView", "()Landroid/view/View;");
+        jobject decorView = (*env)->CallObjectMethod(env, window, getDecorViewMethod);
+
+        if (decorView != NULL) {
+            jclass viewClass = (*env)->GetObjectClass(env, decorView);
+            jmethodID getRootWindowInsetsMethod = (*env)->GetMethodID(env, viewClass, "getRootWindowInsets", "()Landroid/view/WindowInsets;");
+
+            if (getRootWindowInsetsMethod != NULL && !(*env)->ExceptionCheck(env)) {
+                jobject windowInsets = (*env)->CallObjectMethod(env, decorView, getRootWindowInsetsMethod);
+
+                if (windowInsets != NULL && !(*env)->ExceptionCheck(env)) {
+                    jclass windowInsetsClass = (*env)->GetObjectClass(env, windowInsets);
+                    jmethodID getDisplayCutoutMethod = (*env)->GetMethodID(env, windowInsetsClass, "getDisplayCutout", "()Landroid/view/DisplayCutout;");
+
+                    if (getDisplayCutoutMethod != NULL && !(*env)->ExceptionCheck(env)) {
+                        jobject displayCutout = (*env)->CallObjectMethod(env, windowInsets, getDisplayCutoutMethod);
+
+                        if (displayCutout != NULL && !(*env)->ExceptionCheck(env)) {
+                            jclass displayCutoutClass = (*env)->GetObjectClass(env, displayCutout);
+
+                            jmethodID getSafeInsetLeftMethod = (*env)->GetMethodID(env, displayCutoutClass, "getSafeInsetLeft", "()I");
+                            jmethodID getSafeInsetTopMethod = (*env)->GetMethodID(env, displayCutoutClass, "getSafeInsetTop", "()I");
+                            jmethodID getSafeInsetRightMethod = (*env)->GetMethodID(env, displayCutoutClass, "getSafeInsetRight", "()I");
+                            jmethodID getSafeInsetBottomMethod = (*env)->GetMethodID(env, displayCutoutClass, "getSafeInsetBottom", "()I");
+
+                            if (getSafeInsetLeftMethod != NULL && getSafeInsetTopMethod != NULL &&
+                                getSafeInsetRightMethod != NULL && getSafeInsetBottomMethod != NULL) {
+
+                                jint leftInset = (*env)->CallIntMethod(env, displayCutout, getSafeInsetLeftMethod);
+                                jint topInset = (*env)->CallIntMethod(env, displayCutout, getSafeInsetTopMethod);
+                                jint rightInset = (*env)->CallIntMethod(env, displayCutout, getSafeInsetRightMethod);
+                                jint bottomInset = (*env)->CallIntMethod(env, displayCutout, getSafeInsetBottomMethod);
+
+                                android_data->usable_x_offset = leftInset;
+                                android_data->usable_y_offset = topInset;
+                                android_data->usable_width = android_data->display_width - leftInset - rightInset;
+                                android_data->usable_height = android_data->display_height - topInset - bottomInset;
+
+                                LOGI("Display cutout insets - left: %d, top: %d, right: %d, bottom: %d",
+                                     leftInset, topInset, rightInset, bottomInset);
+                                LOGI("Usable area: %dx%d at offset (%d, %d)",
+                                     android_data->usable_width, android_data->usable_height,
+                                     android_data->usable_x_offset, android_data->usable_y_offset);
+                            }
+
+                            (*env)->DeleteLocalRef(env, displayCutoutClass);
+                            (*env)->DeleteLocalRef(env, displayCutout);
+                        }
+                    }
+
+                    (*env)->DeleteLocalRef(env, windowInsetsClass);
+                    (*env)->DeleteLocalRef(env, windowInsets);
+                }
+            }
+
+            (*env)->DeleteLocalRef(env, viewClass);
+            (*env)->DeleteLocalRef(env, decorView);
+        }
+
+        (*env)->DeleteLocalRef(env, windowClass);
+        (*env)->DeleteLocalRef(env, window);
+    }
+
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+    }
+
+    (*env)->DeleteLocalRef(env, activityClass);
+    (*activity->vm)->DetachCurrentThread(activity->vm);
+}
+
+int pt_android_get_usable_framebuffer_width(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+
+    if (android_data) {
+        if (android_data->usable_width == 0) {
+            pt_android_get_display_cutout_info();
+        }
+        return android_data->usable_width;
+    }
+
+    return 0;
+}
+
+int pt_android_get_usable_framebuffer_height(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+
+    if (android_data) {
+        if (android_data->usable_height == 0) {
+            pt_android_get_display_cutout_info();
+        }
+        return android_data->usable_height;
+    }
+
+    return 0;
+}
+
+int pt_android_get_usable_framebuffer_xoffset(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+
+    if (android_data) {
+        if (android_data->usable_width == 0) {
+            pt_android_get_display_cutout_info();
+        }
+        return android_data->usable_x_offset;
+    }
+
+    return 0;
+}
+
+int pt_android_get_usable_framebuffer_yoffset(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+
+    if (android_data) {
+        if (android_data->usable_height == 0) {
+            pt_android_get_display_cutout_info();
+        }
+        return android_data->usable_y_offset;
+    }
+
+    return 0;
 }

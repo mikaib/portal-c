@@ -21,6 +21,10 @@ PtBackend *pt_glfw_create() {
     backend->get_window_height = pt_glfw_get_window_height;
     backend->get_framebuffer_width = pt_glfw_get_framebuffer_width;
     backend->get_framebuffer_height = pt_glfw_get_framebuffer_height;
+    backend->get_usable_width = pt_glfw_get_framebuffer_width;
+    backend->get_usable_height = pt_glfw_get_framebuffer_height;
+    backend->get_usable_xoffset = pt_glfw_offset_zero;
+    backend->get_usable_yoffset = pt_glfw_offset_zero;
     backend->use_gl_context = pt_glfw_use_gl_context;
     backend->should_window_close = pt_glfw_should_window_close;
 
@@ -184,4 +188,8 @@ int pt_glfw_get_framebuffer_height(PtWindow *window) {
     int width, height;
     glfwGetFramebufferSize((GLFWwindow*)window->handle, &width, &height);
     return height;
+}
+
+int pt_glfw_offset_zero(PtWindow *window) {
+    return 0;
 }

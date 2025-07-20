@@ -212,6 +212,34 @@ int pt_get_framebuffer_height(PtWindow *window) {
     return active_config->backend->get_framebuffer_height(window);
 }
 
+int pt_get_usable_width(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_usable_width(window);
+}
+
+int pt_get_usable_height(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_usable_height(window);
+}
+
+int pt_get_usable_xoffset(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_usable_xoffset(window);
+}
+
+int pt_get_usable_yoffset(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+
+    return active_config->backend->get_usable_yoffset(window);
+}
+
 void pt_shutdown() {
     PT_ASSERT(active_config != NULL);
     PT_ASSERT(active_config->backend != NULL);

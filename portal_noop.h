@@ -23,6 +23,9 @@ int pt_noop_get_framebuffer_width(PtWindow *window);
 int pt_noop_get_framebuffer_height(PtWindow *window);
 PT_BOOL pt_noop_should_window_close(PtWindow *window);
 
+// helper
+int pt_noop_offset_zero(PtWindow *window);
+
 // context
 PT_BOOL pt_noop_use_gl_context(PtWindow *window);
 

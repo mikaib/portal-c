@@ -40,6 +40,10 @@ void pt_android_internal_poll();
 int pt_android_handle_input(struct android_app* app, AInputEvent* event);
 static void pt_android_configure_window_flags_only(JNIEnv* env, jobject window);
 static void pt_android_configure_fullscreen_direct(JNIEnv* env, jobject activityObject, jclass activityClass);
+int pt_android_get_usable_framebuffer_width(PtWindow *window);
+int pt_android_get_usable_framebuffer_height(PtWindow *window);
+int pt_android_get_usable_framebuffer_xoffset(PtWindow *window);
+int pt_android_get_usable_framebuffer_yoffset(PtWindow *window);
 
 #ifdef __cplusplus
 }

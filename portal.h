@@ -134,6 +134,10 @@ typedef struct PtBackend {
     int (*get_window_height)(PtWindow *window);
     int (*get_framebuffer_width)(PtWindow *window);
     int (*get_framebuffer_height)(PtWindow *window);
+    int (*get_usable_width)(PtWindow *window);
+    int (*get_usable_height)(PtWindow *window);
+    int (*get_usable_xoffset)(PtWindow *window);
+    int (*get_usable_yoffset)(PtWindow *window);
     PT_BOOL (*should_window_close)(PtWindow *window);
 
     // lifecycle
@@ -167,6 +171,10 @@ int pt_get_window_width(PtWindow *window);
 int pt_get_window_height(PtWindow *window);
 int pt_get_framebuffer_width(PtWindow *window);
 int pt_get_framebuffer_height(PtWindow *window);
+int pt_get_usable_width(PtWindow *window);
+int pt_get_usable_height(PtWindow *window);
+int pt_get_usable_xoffset(PtWindow *window);
+int pt_get_usable_yoffset(PtWindow *window);
 PT_BOOL pt_should_window_close(PtWindow *window);
 
 // events

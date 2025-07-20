@@ -31,6 +31,9 @@ void pt_glfw_cb_mouse_scroll(PtWindow *window, double x, double y);
 void pt_glfw_cb_key(PtWindow *window, int key, int scancode, int action);
 void pt_glfw_cb_char(PtWindow *window, unsigned int codepoint);
 
+// helper
+int pt_glfw_offset_zero(PtWindow *window);
+
 // context
 PT_BOOL pt_glfw_use_gl_context(PtWindow *window);
 
