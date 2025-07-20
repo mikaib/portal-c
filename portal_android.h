@@ -38,6 +38,8 @@ void pt_android_handle_surface_changed(int width, int height);
 void pt_android_set_should_close(int should_close);
 void pt_android_internal_poll();
 int pt_android_handle_input(struct android_app* app, AInputEvent* event);
+static void pt_android_configure_window_flags_only(JNIEnv* env, jobject window);
+static void pt_android_configure_fullscreen_direct(JNIEnv* env, jobject activityObject, jclass activityClass);
 
 #ifdef __cplusplus
 }

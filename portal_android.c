@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <jni.h>
 
 extern void hxcpp_main();
 
@@ -29,10 +30,267 @@ typedef struct {
     int should_close;
     int initialized;
     int pending_surface_destroy;
+    int display_width;
+    int display_height;
 } PtAndroidData;
 
 static struct android_app* pt_internal_android_app = NULL;
 static PtAndroidData *android_data = NULL;
+
+static void pt_android_configure_fullscreen() {
+    if (android_data == NULL || android_data->activity == NULL) {
+        LOGE("no activity");
+        return;
+    }
+
+    ANativeActivity* activity = android_data->activity;
+    JNIEnv* env = NULL;
+
+    (*activity->vm)->AttachCurrentThread(activity->vm, &env, NULL);
+    if (env == NULL) {
+        LOGE("Failed to get JNI environment");
+        return;
+    }
+
+    jobject activityObject = activity->clazz;
+    jclass activityClass = (*env)->GetObjectClass(env, activityObject);
+    jclass runnableClass = (*env)->FindClass(env, "java/lang/Runnable");
+    jmethodID runnableInit = (*env)->GetMethodID(env, runnableClass, "<init>", "()V");
+
+    jmethodID runOnUiThreadMethod = (*env)->GetMethodID(env, activityClass, "runOnUiThread", "(Ljava/lang/Runnable;)V");
+
+    if (runOnUiThreadMethod == NULL) {
+        LOGE("runOnUiThread missing!!");
+        (*env)->DeleteLocalRef(env, runnableClass);
+        (*env)->DeleteLocalRef(env, activityClass);
+        (*activity->vm)->DetachCurrentThread(activity->vm);
+        return;
+    }
+
+    jclass looperClass = (*env)->FindClass(env, "android/os/Looper");
+    jmethodID getMainLooperMethod = (*env)->GetStaticMethodID(env, looperClass, "getMainLooper", "()Landroid/os/Looper;");
+    jmethodID myLooperMethod = (*env)->GetStaticMethodID(env, looperClass, "myLooper", "()Landroid/os/Looper;");
+
+    jobject mainLooper = (*env)->CallStaticObjectMethod(env, looperClass, getMainLooperMethod);
+    jobject currentLooper = (*env)->CallStaticObjectMethod(env, looperClass, myLooperMethod);
+
+    jboolean isMainThread = (*env)->IsSameObject(env, mainLooper, currentLooper);
+
+    if (!isMainThread) {
+        LOGI("Not on main thread!");
+
+        jclass handlerClass = (*env)->FindClass(env, "android/os/Handler");
+        jmethodID handlerInitMethod = (*env)->GetMethodID(env, handlerClass, "<init>", "(Landroid/os/Looper;)V");
+        jobject handler = (*env)->NewObject(env, handlerClass, handlerInitMethod, mainLooper);
+
+        jmethodID getWindowMethod = (*env)->GetMethodID(env, activityClass, "getWindow", "()Landroid/view/Window;");
+        jobject window = (*env)->CallObjectMethod(env, activityObject, getWindowMethod);
+
+        if (window != NULL) {
+            jobject globalActivity = (*env)->NewGlobalRef(env, activityObject);
+            jobject globalWindow = (*env)->NewGlobalRef(env, window);
+
+            pt_android_configure_window_flags_only(env, globalWindow);
+
+            (*env)->DeleteLocalRef(env, window);
+            (*env)->DeleteGlobalRef(env, globalActivity);
+            (*env)->DeleteGlobalRef(env, globalWindow);
+        }
+
+        (*env)->DeleteLocalRef(env, handler);
+        (*env)->DeleteLocalRef(env, handlerClass);
+    } else {
+        pt_android_configure_fullscreen_direct(env, activityObject, activityClass);
+    }
+
+    (*env)->DeleteLocalRef(env, mainLooper);
+    (*env)->DeleteLocalRef(env, currentLooper);
+    (*env)->DeleteLocalRef(env, looperClass);
+    (*env)->DeleteLocalRef(env, runnableClass);
+    (*env)->DeleteLocalRef(env, activityClass);
+    (*activity->vm)->DetachCurrentThread(activity->vm);
+}
+
+static void pt_android_configure_window_flags_only(JNIEnv* env, jobject window) {
+    jclass windowClass = (*env)->GetObjectClass(env, window);
+
+    jclass layoutParamsClass = (*env)->FindClass(env, "android/view/WindowManager$LayoutParams");
+    jfieldID flagFullscreenField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_FULLSCREEN", "I");
+    jfieldID flagLayoutNoLimitsField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_LAYOUT_NO_LIMITS", "I");
+    jfieldID flagKeepScreenOnField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_KEEP_SCREEN_ON", "I");
+    jfieldID flagHardwareAccelField = (*env)->GetStaticFieldID(env, layoutParamsClass, "FLAG_HARDWARE_ACCELERATED", "I");
+
+    jint flagFullscreen = (*env)->GetStaticIntField(env, layoutParamsClass, flagFullscreenField);
+    jint flagKeepScreenOn = (*env)->GetStaticIntField(env, layoutParamsClass, flagKeepScreenOnField);
+    jint flagHardwareAccel = (*env)->GetStaticIntField(env, layoutParamsClass, flagHardwareAccelField);
+    jint flagLayoutNoLimits = 0;
+
+    if (flagLayoutNoLimitsField != NULL) {
+        flagLayoutNoLimits = (*env)->GetStaticIntField(env, layoutParamsClass, flagLayoutNoLimitsField);
+        LOGI("Layout no limits flag available: 0x%x", flagLayoutNoLimits);
+    }
+
+    jfieldID layoutInDisplayCutoutField = (*env)->GetStaticFieldID(env, layoutParamsClass, "LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS", "I");
+    if (layoutInDisplayCutoutField != NULL && !(*env)->ExceptionCheck(env)) {
+        jmethodID getAttributesMethod = (*env)->GetMethodID(env, windowClass, "getAttributes", "()Landroid/view/WindowManager$LayoutParams;");
+        jobject layoutParams = (*env)->CallObjectMethod(env, window, getAttributesMethod);
+
+        if (layoutParams != NULL && !(*env)->ExceptionCheck(env)) {
+            jfieldID layoutInDisplayCutoutModeField = (*env)->GetFieldID(env, layoutParamsClass, "layoutInDisplayCutoutMode", "I");
+            if (layoutInDisplayCutoutModeField != NULL && !(*env)->ExceptionCheck(env)) {
+                jint layoutInDisplayCutout = (*env)->GetStaticIntField(env, layoutParamsClass, layoutInDisplayCutoutField);
+                (*env)->SetIntField(env, layoutParams, layoutInDisplayCutoutModeField, layoutInDisplayCutout);
+
+                jmethodID setAttributesMethod = (*env)->GetMethodID(env, windowClass, "setAttributes", "(Landroid/view/WindowManager$LayoutParams;)V");
+                (*env)->CallVoidMethod(env, window, setAttributesMethod, layoutParams);
+                LOGI("Applied display cutout mode");
+            }
+            (*env)->DeleteLocalRef(env, layoutParams);
+        }
+    }
+
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+    }
+
+    jmethodID addFlagsMethod = (*env)->GetMethodID(env, windowClass, "addFlags", "(I)V");
+    jint combinedFlags = flagFullscreen | flagKeepScreenOn | flagHardwareAccel | flagLayoutNoLimits;
+    (*env)->CallVoidMethod(env, window, addFlagsMethod, combinedFlags);
+    LOGI("Applied window flags: 0x%x", combinedFlags);
+
+    (*env)->DeleteLocalRef(env, windowClass);
+    (*env)->DeleteLocalRef(env, layoutParamsClass);
+}
+
+static void pt_android_configure_fullscreen_direct(JNIEnv* env, jobject activityObject, jclass activityClass) {
+    jmethodID getWindowMethod = (*env)->GetMethodID(env, activityClass, "getWindow", "()Landroid/view/Window;");
+    jobject window = (*env)->CallObjectMethod(env, activityObject, getWindowMethod);
+
+    if (window == NULL) {
+        LOGE("Failed to get window object");
+        return;
+    }
+
+    pt_android_configure_window_flags_only(env, window);
+
+    jclass windowClass = (*env)->GetObjectClass(env, window);
+    jmethodID getDecorViewMethod = (*env)->GetMethodID(env, windowClass, "getDecorView", "()Landroid/view/View;");
+    jobject decorView = (*env)->CallObjectMethod(env, window, getDecorViewMethod);
+
+    if (decorView != NULL) {
+        jclass viewClass = (*env)->GetObjectClass(env, decorView);
+        jmethodID setSystemUiVisibilityMethod = (*env)->GetMethodID(env, viewClass, "setSystemUiVisibility", "(I)V");
+
+        jclass systemUiFlagClass = (*env)->FindClass(env, "android/view/View");
+        jfieldID hideNavigationField = (*env)->GetStaticFieldID(env, systemUiFlagClass, "SYSTEM_UI_FLAG_HIDE_NAVIGATION", "I");
+        jfieldID fullscreenField = (*env)->GetStaticFieldID(env, systemUiFlagClass, "SYSTEM_UI_FLAG_FULLSCREEN", "I");
+        jfieldID immersiveField = (*env)->GetStaticFieldID(env, systemUiFlagClass, "SYSTEM_UI_FLAG_IMMERSIVE_STICKY", "I");
+        jfieldID layoutStableField = (*env)->GetStaticFieldID(env, systemUiFlagClass, "SYSTEM_UI_FLAG_LAYOUT_STABLE", "I");
+        jfieldID layoutHideNavigationField = (*env)->GetStaticFieldID(env, systemUiFlagClass, "SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION", "I");
+        jfieldID layoutFullscreenField = (*env)->GetStaticFieldID(env, systemUiFlagClass, "SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN", "I");
+
+        jint hideNavigation = (*env)->GetStaticIntField(env, systemUiFlagClass, hideNavigationField);
+        jint fullscreenFlag = (*env)->GetStaticIntField(env, systemUiFlagClass, fullscreenField);
+        jint immersive = (*env)->GetStaticIntField(env, systemUiFlagClass, immersiveField);
+        jint layoutStable = (*env)->GetStaticIntField(env, systemUiFlagClass, layoutStableField);
+        jint layoutHideNavigation = (*env)->GetStaticIntField(env, systemUiFlagClass, layoutHideNavigationField);
+        jint layoutFullscreen = (*env)->GetStaticIntField(env, systemUiFlagClass, layoutFullscreenField);
+
+        jint uiFlags = hideNavigation | fullscreenFlag | immersive | layoutStable | layoutHideNavigation | layoutFullscreen;
+
+        (*env)->CallVoidMethod(env, decorView, setSystemUiVisibilityMethod, uiFlags);
+        LOGI("Applied system UI flags: 0x%x", uiFlags);
+
+        (*env)->DeleteLocalRef(env, viewClass);
+        (*env)->DeleteLocalRef(env, systemUiFlagClass);
+        (*env)->DeleteLocalRef(env, decorView);
+    }
+
+    (*env)->DeleteLocalRef(env, windowClass);
+    (*env)->DeleteLocalRef(env, window);
+}
+
+static void pt_android_get_real_display_size() {
+    if (android_data == NULL || android_data->activity == NULL) {
+        LOGE("no activity");
+        return;
+    }
+
+    ANativeActivity* activity = android_data->activity;
+    JNIEnv* env = NULL;
+
+    (*activity->vm)->AttachCurrentThread(activity->vm, &env, NULL);
+    if (env == NULL) {
+        LOGE("Failed to get JNI environment for display info");
+        return;
+    }
+
+    jobject activityObject = activity->clazz;
+    jclass activityClass = (*env)->GetObjectClass(env, activityObject);
+
+    jmethodID getSystemServiceMethod = (*env)->GetMethodID(env, activityClass, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+    jstring windowServiceString = (*env)->NewStringUTF(env, "window");
+    jobject windowManager = (*env)->CallObjectMethod(env, activityObject, getSystemServiceMethod, windowServiceString);
+
+    if (windowManager != NULL) {
+        jclass windowManagerClass = (*env)->GetObjectClass(env, windowManager);
+        jmethodID getDefaultDisplayMethod = (*env)->GetMethodID(env, windowManagerClass, "getDefaultDisplay", "()Landroid/view/Display;");
+        jobject display = (*env)->CallObjectMethod(env, windowManager, getDefaultDisplayMethod);
+
+        if (display != NULL) {
+            jclass displayClass = (*env)->GetObjectClass(env, display);
+            jmethodID getRealSizeMethod = (*env)->GetMethodID(env, displayClass, "getRealSize", "(Landroid/graphics/Point;)V");
+
+            if (getRealSizeMethod != NULL) {
+                jclass pointClass = (*env)->FindClass(env, "android/graphics/Point");
+                jmethodID pointConstructor = (*env)->GetMethodID(env, pointClass, "<init>", "()V");
+                jobject point = (*env)->NewObject(env, pointClass, pointConstructor);
+
+                (*env)->CallVoidMethod(env, display, getRealSizeMethod, point);
+
+                jfieldID xField = (*env)->GetFieldID(env, pointClass, "x", "I");
+                jfieldID yField = (*env)->GetFieldID(env, pointClass, "y", "I");
+
+                android_data->display_width = (*env)->GetIntField(env, point, xField);
+                android_data->display_height = (*env)->GetIntField(env, point, yField);
+
+                LOGI("Real display size: %dx%d", android_data->display_width, android_data->display_height);
+
+                (*env)->DeleteLocalRef(env, point);
+                (*env)->DeleteLocalRef(env, pointClass);
+            } else {
+                jmethodID getSizeMethod = (*env)->GetMethodID(env, displayClass, "getSize", "(Landroid/graphics/Point;)V");
+                jclass pointClass = (*env)->FindClass(env, "android/graphics/Point");
+                jmethodID pointConstructor = (*env)->GetMethodID(env, pointClass, "<init>", "()V");
+                jobject point = (*env)->NewObject(env, pointClass, pointConstructor);
+
+                (*env)->CallVoidMethod(env, display, getSizeMethod, point);
+
+                jfieldID xField = (*env)->GetFieldID(env, pointClass, "x", "I");
+                jfieldID yField = (*env)->GetFieldID(env, pointClass, "y", "I");
+
+                android_data->display_width = (*env)->GetIntField(env, point, xField);
+                android_data->display_height = (*env)->GetIntField(env, point, yField);
+
+                LOGI("Display size (fallback): %dx%d", android_data->display_width, android_data->display_height);
+
+                (*env)->DeleteLocalRef(env, point);
+                (*env)->DeleteLocalRef(env, pointClass);
+            }
+
+            (*env)->DeleteLocalRef(env, displayClass);
+            (*env)->DeleteLocalRef(env, display);
+        }
+
+        (*env)->DeleteLocalRef(env, windowManagerClass);
+        (*env)->DeleteLocalRef(env, windowManager);
+    }
+
+    (*env)->DeleteLocalRef(env, windowServiceString);
+    (*env)->DeleteLocalRef(env, activityClass);
+
+    (*activity->vm)->DetachCurrentThread(activity->vm);
+}
 
 PT_BOOL pt_android_init_egl() {
     if (android_data == NULL) {
@@ -44,6 +302,9 @@ PT_BOOL pt_android_init_egl() {
         LOGE("Native window is NULL");
         return PT_FALSE;
     }
+
+    pt_android_configure_fullscreen();
+    pt_android_get_real_display_size();
 
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
@@ -138,6 +399,8 @@ static void pt_android_handle_init(struct android_app* app) {
             android_data->display = EGL_NO_DISPLAY;
             android_data->surface = EGL_NO_SURFACE;
             android_data->context = EGL_NO_CONTEXT;
+            android_data->display_width = 0;
+            android_data->display_height = 0;
         }
 
         android_data->native_window = app->window;
@@ -148,6 +411,10 @@ static void pt_android_handle_init(struct android_app* app) {
             android_data->surface == EGL_NO_SURFACE) {
 
             LOGI("Recreating EGL surface after minimization");
+
+            pt_android_configure_fullscreen();
+            pt_android_get_real_display_size();
+
             android_data->surface = eglCreateWindowSurface(android_data->display,
                                                          android_data->config,
                                                          android_data->native_window,
@@ -298,6 +565,8 @@ void pt_android_set_native_window(ANativeWindow *native_window, ANativeActivity 
         android_data->display = EGL_NO_DISPLAY;
         android_data->surface = EGL_NO_SURFACE;
         android_data->context = EGL_NO_CONTEXT;
+        android_data->display_width = 0;
+        android_data->display_height = 0;
     }
 
     android_data->native_window = native_window;
@@ -327,8 +596,8 @@ PtBackend *pt_android_create() {
     backend->swap_buffers = pt_android_swap_buffers;
     backend->get_window_width = pt_android_get_window_width;
     backend->get_window_height = pt_android_get_window_height;
-    backend->get_framebuffer_width = pt_android_get_window_width;
-    backend->get_framebuffer_height = pt_android_get_window_height;
+    backend->get_framebuffer_width = pt_android_get_framebuffer_width;
+    backend->get_framebuffer_height = pt_android_get_framebuffer_height;
     backend->use_gl_context = pt_android_use_gl_context;
     backend->should_window_close = pt_android_should_window_close;
 
@@ -441,8 +710,14 @@ void pt_android_set_should_close(int should_close) {
 int pt_android_get_window_width(PtWindow *window) {
     PT_ASSERT(window != NULL);
 
-    if (android_data && android_data->native_window) {
-        return ANativeWindow_getWidth(android_data->native_window);
+    if (android_data) {
+        if (android_data->display_width > 0) {
+            return android_data->display_width;
+        }
+
+        if (android_data->native_window) {
+            return ANativeWindow_getWidth(android_data->native_window);
+        }
     }
 
     return 0;
@@ -451,29 +726,23 @@ int pt_android_get_window_width(PtWindow *window) {
 int pt_android_get_window_height(PtWindow *window) {
     PT_ASSERT(window != NULL);
 
-    if (android_data && android_data->native_window) {
-        return ANativeWindow_getHeight(android_data->native_window);
+    if (android_data) {
+        if (android_data->display_height > 0) {
+            return android_data->display_height;
+        }
+
+        if (android_data->native_window) {
+            return ANativeWindow_getHeight(android_data->native_window);
+        }
     }
 
     return 0;
 }
 
 int pt_android_get_framebuffer_width(PtWindow *window) {
-    PT_ASSERT(window != NULL);
-
-    if (android_data && android_data->native_window) {
-        return ANativeWindow_getWidth(android_data->native_window);
-    }
-
-    return 0;
+    return pt_android_get_window_width(window);
 }
 
 int pt_android_get_framebuffer_height(PtWindow *window) {
-    PT_ASSERT(window != NULL);
-
-    if (android_data && android_data->native_window) {
-        return ANativeWindow_getHeight(android_data->native_window);
-    }
-
-    return 0;
+    return pt_android_get_window_height(window);
 }
