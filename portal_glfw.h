@@ -3,10 +3,23 @@
 
 #include "portal.h"
 
+// Forward declaration for GLFW types
+struct GLFWwindow;
+typedef struct GLFWwindow GLFWwindow;
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+// Handle struct to cache sizes and hold GLFW window
+typedef struct {
+    void* glfw;
+    int window_width;
+    int window_height;
+    int framebuffer_width;
+    int framebuffer_height;
+} PtGlfwHandle;
 
 // creation / destruction
 PtBackend *pt_glfw_create();
@@ -25,11 +38,13 @@ int pt_glfw_get_framebuffer_height(PtWindow *window);
 PT_BOOL pt_glfw_should_window_close(PtWindow *window);
 
 // callbacks
-void pt_glfw_cb_mouse_button(PtWindow *window, int button, int action);
-void pt_glfw_cb_mouse_move(PtWindow *window, double x, double y);
-void pt_glfw_cb_mouse_scroll(PtWindow *window, double x, double y);
-void pt_glfw_cb_key(PtWindow *window, int key, int scancode, int action);
-void pt_glfw_cb_char(PtWindow *window, unsigned int codepoint);
+void pt_glfw_cb_mouse_button(GLFWwindow *glfw_window, int button, int action);
+void pt_glfw_cb_mouse_move(GLFWwindow *glfw_window, double x, double y);
+void pt_glfw_cb_mouse_scroll(GLFWwindow *glfw_window, double x, double y);
+void pt_glfw_cb_key(GLFWwindow *glfw_window, int key, int scancode, int action);
+void pt_glfw_cb_char(GLFWwindow *glfw_window, unsigned int codepoint);
+void pt_glfw_cb_window_size(GLFWwindow *glfw_window, int width, int height);
+void pt_glfw_cb_framebuffer_size(GLFWwindow *glfw_window, int width, int height);
 
 // helper
 int pt_glfw_offset_zero(PtWindow *window);

@@ -52,19 +52,32 @@ PtWindow* pt_glfw_create_window(const char *title, int width, int height) {
     PT_ASSERT(title != NULL);
 
     PtWindow *window = PT_ALLOC(PtWindow);
-    window->handle = (void*)glfwCreateWindow(width, height, title, NULL, NULL);
+    PtGlfwHandle *handle = PT_ALLOC(PtGlfwHandle);
+    
+    handle->glfw = glfwCreateWindow(width, height, title, NULL, NULL);
+    handle->window_width = width;
+    handle->window_height = height;
+    
+    // Get initial framebuffer size
+    glfwGetFramebufferSize((GLFWwindow*)handle->glfw, &handle->framebuffer_width, &handle->framebuffer_height);
+    
+    window->handle = handle;
 
-    glfwSetMouseButtonCallback((GLFWwindow*)window->handle, (GLFWmousebuttonfun)pt_glfw_cb_mouse_button);
-    glfwSetCursorPosCallback((GLFWwindow*)window->handle, (GLFWcursorposfun)pt_glfw_cb_mouse_move);
-    glfwSetScrollCallback((GLFWwindow*)window->handle, (GLFWscrollfun)pt_glfw_cb_mouse_scroll);
-    glfwSetKeyCallback((GLFWwindow*)window->handle, (GLFWkeyfun)pt_glfw_cb_key);
-    glfwSetCharCallback((GLFWwindow*)window->handle, (GLFWcharfun)pt_glfw_cb_char);
+    glfwSetWindowUserPointer((GLFWwindow*)handle->glfw, window);
+    glfwSetMouseButtonCallback((GLFWwindow*)handle->glfw, (GLFWmousebuttonfun)pt_glfw_cb_mouse_button);
+    glfwSetCursorPosCallback((GLFWwindow*)handle->glfw, (GLFWcursorposfun)pt_glfw_cb_mouse_move);
+    glfwSetScrollCallback((GLFWwindow*)handle->glfw, (GLFWscrollfun)pt_glfw_cb_mouse_scroll);
+    glfwSetKeyCallback((GLFWwindow*)handle->glfw, (GLFWkeyfun)pt_glfw_cb_key);
+    glfwSetCharCallback((GLFWwindow*)handle->glfw, (GLFWcharfun)pt_glfw_cb_char);
+    glfwSetWindowSizeCallback((GLFWwindow*)handle->glfw, (GLFWwindowsizefun)pt_glfw_cb_window_size);
+    glfwSetFramebufferSizeCallback((GLFWwindow*)handle->glfw, (GLFWframebuffersizefun)pt_glfw_cb_framebuffer_size);
 
-    PT_ASSERT(window->handle != NULL);
+    PT_ASSERT(handle->glfw != NULL);
     return window;
 }
 
-void pt_glfw_cb_mouse_button(PtWindow *window, int button, int action) {
+void pt_glfw_cb_mouse_button(GLFWwindow *glfw_window, int button, int action) {
+    PtWindow *window = (PtWindow*)glfwGetWindowUserPointer(glfw_window);
     PT_ASSERT(window != NULL);
 
     PtInputEventData event = pt_create_input_event_data();
@@ -74,7 +87,8 @@ void pt_glfw_cb_mouse_button(PtWindow *window, int button, int action) {
     pt_push_input_event(window, event);
 }
 
-void pt_glfw_cb_mouse_move(PtWindow *window, double x, double y) {
+void pt_glfw_cb_mouse_move(GLFWwindow *glfw_window, double x, double y) {
+    PtWindow *window = (PtWindow*)glfwGetWindowUserPointer(glfw_window);
     PT_ASSERT(window != NULL);
 
     PtInputEventData event = pt_create_input_event_data();
@@ -85,7 +99,8 @@ void pt_glfw_cb_mouse_move(PtWindow *window, double x, double y) {
     pt_push_input_event(window, event);
 }
 
-void pt_glfw_cb_mouse_scroll(PtWindow *window, double x, double y) {
+void pt_glfw_cb_mouse_scroll(GLFWwindow *glfw_window, double x, double y) {
+    PtWindow *window = (PtWindow*)glfwGetWindowUserPointer(glfw_window);
     PT_ASSERT(window != NULL);
 
     PtInputEventData event = pt_create_input_event_data();
@@ -96,7 +111,8 @@ void pt_glfw_cb_mouse_scroll(PtWindow *window, double x, double y) {
     pt_push_input_event(window, event);
 }
 
-void pt_glfw_cb_key(PtWindow *window, int key, int scancode, int action) {
+void pt_glfw_cb_key(GLFWwindow *glfw_window, int key, int scancode, int action) {
+    PtWindow *window = (PtWindow*)glfwGetWindowUserPointer(glfw_window);
     PT_ASSERT(window != NULL);
 
     PtInputEventData event = pt_create_input_event_data();
@@ -116,7 +132,8 @@ void pt_glfw_cb_key(PtWindow *window, int key, int scancode, int action) {
     pt_push_input_event(window, event);
 }
 
-void pt_glfw_cb_char(PtWindow *window, unsigned int codepoint) {
+void pt_glfw_cb_char(GLFWwindow *glfw_window, unsigned int codepoint) {
+    PtWindow *window = (PtWindow*)glfwGetWindowUserPointer(glfw_window);
     PT_ASSERT(window != NULL);
 
     PtInputEventData event = pt_create_input_event_data();
@@ -126,10 +143,30 @@ void pt_glfw_cb_char(PtWindow *window, unsigned int codepoint) {
     pt_push_input_event(window, event);
 }
 
+void pt_glfw_cb_window_size(GLFWwindow *glfw_window, int width, int height) {
+    PtWindow *window = (PtWindow*)glfwGetWindowUserPointer(glfw_window);
+    PT_ASSERT(window != NULL);
+    
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    handle->window_width = width;
+    handle->window_height = height;
+}
+
+void pt_glfw_cb_framebuffer_size(GLFWwindow *glfw_window, int width, int height) {
+    PtWindow *window = (PtWindow*)glfwGetWindowUserPointer(glfw_window);
+    PT_ASSERT(window != NULL);
+    
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    handle->framebuffer_width = width;
+    handle->framebuffer_height = height;
+}
+
 void pt_glfw_destroy_window(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    glfwDestroyWindow((GLFWwindow*)window->handle);
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    glfwDestroyWindow((GLFWwindow*)handle->glfw);
+    PT_FREE(handle);
     PT_FREE(window);
 }
 
@@ -142,52 +179,51 @@ void pt_glfw_poll_events(PtWindow *window) {
 void pt_glfw_swap_buffers(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    glfwSwapBuffers((GLFWwindow*)window->handle);
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    glfwSwapBuffers((GLFWwindow*)handle->glfw);
 }
 
 PT_BOOL pt_glfw_should_window_close(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    return glfwWindowShouldClose((GLFWwindow*)window->handle);
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    return glfwWindowShouldClose((GLFWwindow*)handle->glfw);
 }
 
 PT_BOOL pt_glfw_use_gl_context(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    glfwMakeContextCurrent((GLFWwindow*)window->handle);
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    glfwMakeContextCurrent((GLFWwindow*)handle->glfw);
     return PT_TRUE;
 }
 
 int pt_glfw_get_window_width(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    int width, height;
-    glfwGetWindowSize((GLFWwindow*)window->handle, &width, &height);
-    return width;
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    return handle->window_width;
 }
 
 int pt_glfw_get_window_height(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    int width, height;
-    glfwGetWindowSize((GLFWwindow*)window->handle, &width, &height);
-    return height;
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    return handle->window_height;
 }
 
 int pt_glfw_get_framebuffer_width(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    int width, height;
-    glfwGetFramebufferSize((GLFWwindow*)window->handle, &width, &height);
-    return width;
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    return handle->framebuffer_width;
 }
 
 int pt_glfw_get_framebuffer_height(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    int width, height;
-    glfwGetFramebufferSize((GLFWwindow*)window->handle, &width, &height);
-    return height;
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    return handle->framebuffer_height;
 }
 
 int pt_glfw_offset_zero(PtWindow *window) {
