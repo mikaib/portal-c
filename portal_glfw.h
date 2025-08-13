@@ -19,6 +19,7 @@ typedef struct {
     int window_height;
     int framebuffer_width;
     int framebuffer_height;
+    PT_BOOL vsync_enabled;
 } PtGlfwHandle;
 
 // creation / destruction
@@ -27,10 +28,11 @@ PT_BOOL pt_glfw_init(PtBackend *backend, PtConfig *config);
 void pt_glfw_shutdown(PtBackend *backend);
 
 // window
-PtWindow* pt_glfw_create_window(const char *title, int width, int height);
+PtWindow* pt_glfw_create_window(const char *title, int width, int height, PtWindowFlags flags);
 void pt_glfw_destroy_window(PtWindow *window);
 void pt_glfw_poll_events(PtWindow *window);
 void pt_glfw_swap_buffers(PtWindow *window);
+void* pt_glfw_get_handle(PtWindow *window);
 int pt_glfw_get_window_width(PtWindow *window);
 int pt_glfw_get_window_height(PtWindow *window);
 int pt_glfw_get_framebuffer_width(PtWindow *window);

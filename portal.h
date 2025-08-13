@@ -64,6 +64,11 @@ typedef enum {
     PT_INPUT_EVENT_TOUCHMOVE = 202,     // { finger: int, x: int, y: int }
 } PtInputEventType;
 
+typedef enum {
+    PT_FLAG_NONE = 0,
+    PT_FLAG_VSYNC = 1,
+} PtWindowFlags;
+
 typedef struct PtConfig PtConfig;
 typedef struct PtBackend PtBackend;
 typedef struct PtWindow PtWindow;
@@ -75,6 +80,10 @@ typedef struct PtInputEventData PtInputEventData;
 
 typedef struct PtConfig {
     PtBackend *backend;
+    PT_BOOL throttle_enabled;
+    int target_fps;
+    double last_frame_time;
+    double frame_duration;
 } PtConfig;
 
 typedef struct PtWindow {
@@ -124,9 +133,10 @@ typedef struct PtBackend {
     // core
     PT_BOOL (*init)(PtBackend *backend, PtConfig *config);
     void (*shutdown)(PtBackend *backend);
+    void* (*get_handle)(PtWindow *window);
 
     // window
-    PtWindow *(*create_window)(const char *title, int width, int height);
+    PtWindow *(*create_window)(const char *title, int width, int height, PtWindowFlags flags);
     void (*destroy_window)(PtWindow *window);
     void (*poll_events)(PtWindow *window);
     void (*swap_buffers)(PtWindow *window);
@@ -163,10 +173,11 @@ void pt_destroy_backend(PtBackend *backend);
 PtBackendType pt_get_optimal_backend_type();
 
 // Window
-PtWindow* pt_create_window(const char *title, int width, int height);
+PtWindow* pt_create_window(const char *title, int width, int height, PtWindowFlags flags);
 void pt_destroy_window(PtWindow *window);
 void pt_poll_events(PtWindow *window);
 void pt_swap_buffers(PtWindow *window);
+void* pt_get_window_handle(PtWindow *window); // os-handle
 int pt_get_window_width(PtWindow *window);
 int pt_get_window_height(PtWindow *window);
 int pt_get_framebuffer_width(PtWindow *window);
@@ -185,6 +196,12 @@ PtInputEventData pt_create_input_event_data();
 
 // context
 PT_BOOL pt_use_gl_context(PtWindow *window);
+
+// throttling
+void pt_enable_throttle(int fps);
+void pt_disable_throttle();
+void pt_sleep(double seconds);
+double pt_get_time();
 
 #ifdef __cplusplus
 }

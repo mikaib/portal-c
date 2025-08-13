@@ -13,6 +13,7 @@ PtBackend *pt_glfw_create() {
 
     backend->init = pt_glfw_init;
     backend->shutdown = pt_glfw_shutdown;
+    backend->get_handle = pt_glfw_get_handle;
     backend->create_window = pt_glfw_create_window;
     backend->destroy_window = pt_glfw_destroy_window;
     backend->poll_events = pt_glfw_poll_events;
@@ -48,7 +49,7 @@ void pt_glfw_shutdown(PtBackend *backend) {
     glfwTerminate();
 }
 
-PtWindow* pt_glfw_create_window(const char *title, int width, int height) {
+PtWindow* pt_glfw_create_window(const char *title, int width, int height, PtWindowFlags flags) {
     PT_ASSERT(title != NULL);
 
     PtWindow *window = PT_ALLOC(PtWindow);
@@ -57,7 +58,8 @@ PtWindow* pt_glfw_create_window(const char *title, int width, int height) {
     handle->glfw = glfwCreateWindow(width, height, title, NULL, NULL);
     handle->window_width = width;
     handle->window_height = height;
-    
+    handle->vsync_enabled = (flags & PT_FLAG_VSYNC) != 0;
+
     // Get initial framebuffer size
     glfwGetFramebufferSize((GLFWwindow*)handle->glfw, &handle->framebuffer_width, &handle->framebuffer_height);
     
@@ -74,6 +76,30 @@ PtWindow* pt_glfw_create_window(const char *title, int width, int height) {
 
     PT_ASSERT(handle->glfw != NULL);
     return window;
+}
+
+void* pt_glfw_get_handle(PtWindow *window) {
+    PT_ASSERT(window->handle != NULL);
+
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    GLFWwindow* glfw_window = (GLFWwindow*)handle->glfw;
+
+#ifdef _WIN32
+    #define GLFW_EXPOSE_NATIVE_WIN32
+    #include "glfw/include/GLFW/glfw3native.h"
+    return glfwGetWin32Window(glfw_window);
+#elif defined(__linux__)
+    #define GLFW_EXPOSE_NATIVE_X11
+    #include "glfw/include/GLFW/glfw3native.h"
+    return (void*)(uintptr_t)glfwGetX11Window(glfw_window);
+#elif defined(__APPLE__)
+    #define GLFW_EXPOSE_NATIVE_COCOA
+    #include "glfw/include/GLFW/glfw3native.h"
+    return glfwGetCocoaWindow(glfw_window);
+#else
+    // Fallback to GLFW window handle if no native function available
+    return glfw_window;
+#endif
 }
 
 void pt_glfw_cb_mouse_button(GLFWwindow *glfw_window, int button, int action) {
@@ -195,6 +221,8 @@ PT_BOOL pt_glfw_use_gl_context(PtWindow *window) {
 
     PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
     glfwMakeContextCurrent((GLFWwindow*)handle->glfw);
+    glfwSwapInterval(handle->vsync_enabled ? 1 : 0);
+
     return PT_TRUE;
 }
 

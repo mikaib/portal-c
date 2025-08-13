@@ -13,10 +13,11 @@ PT_BOOL pt_noop_init(PtBackend *backend, PtConfig *config);
 void pt_noop_shutdown(PtBackend *backend);
 
 // window
-PtWindow* pt_noop_create_window(const char *title, int width, int height);
+PtWindow* pt_noop_create_window(const char *title, int width, int height, PtWindowFlags flags);
 void pt_noop_destroy_window(PtWindow *window);
 void pt_noop_poll_events(PtWindow *window);
 void pt_noop_swap_buffers(PtWindow *window);
+void* pt_noop_get_handle(PtWindow *window);
 int pt_noop_get_window_width(PtWindow *window);
 int pt_noop_get_window_height(PtWindow *window);
 int pt_noop_get_framebuffer_width(PtWindow *window);

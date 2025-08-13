@@ -18,10 +18,11 @@ PT_BOOL pt_android_init(PtBackend *backend, PtConfig *config);
 void pt_android_shutdown(PtBackend *backend);
 
 // window
-PtWindow* pt_android_create_window(const char *title, int width, int height);
+PtWindow* pt_android_create_window(const char *title, int width, int height, PtWindowFlags flags);
 void pt_android_destroy_window(PtWindow *window);
 void pt_android_poll_events(PtWindow *window);
 void pt_android_swap_buffers(PtWindow *window);
+void* pt_android_get_handle(PtWindow *window);
 int pt_android_get_window_width(PtWindow *window);
 int pt_android_get_window_height(PtWindow *window);
 int pt_android_get_framebuffer_width(PtWindow *window);

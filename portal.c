@@ -4,6 +4,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <timeapi.h>
+#else
+#include <time.h>
+#include <unistd.h>
+#endif
+
 #ifdef PT_GLFW
 #include "portal_glfw.h"
 #endif
@@ -14,9 +22,17 @@
 
 static PtConfig *active_config = NULL;
 
+#ifdef _WIN32
+static PT_BOOL high_precision_timer_init = PT_FALSE;
+#endif
+
 PtConfig *pt_create_config() {
     PtConfig *config = PT_ALLOC(PtConfig);
     config->backend = NULL;
+    config->throttle_enabled = PT_FALSE;
+    config->target_fps = 60;
+    config->last_frame_time = 0.0;
+    config->frame_duration = 1.0 / 60.0;
 
     return config;
 }
@@ -124,11 +140,11 @@ void pt_push_input_event(PtWindow *window, PtInputEventData event) {
     active_config->backend->input_events[active_config->backend->input_event_count++] = event;
 }
 
-PtWindow* pt_create_window(const char *title, int width, int height) {
+PtWindow* pt_create_window(const char *title, int width, int height, PtWindowFlags flags) {
     PT_ASSERT(active_config != NULL);
     PT_ASSERT(active_config->backend != NULL);
 
-    return active_config->backend->create_window(title, width, height);
+    return active_config->backend->create_window(title, width, height, flags);
 }
 
 void pt_destroy_window(PtWindow *window) {
@@ -150,6 +166,18 @@ void pt_swap_buffers(PtWindow *window) {
     PT_ASSERT(active_config->backend != NULL);
 
     active_config->backend->swap_buffers(window);
+
+    if (active_config->throttle_enabled) {
+        double current_time = pt_get_time();
+        double elapsed = current_time - active_config->last_frame_time;
+        double sleep_time = active_config->frame_duration - elapsed;
+
+        if (sleep_time > 0.0) {
+            pt_sleep(sleep_time);
+        }
+
+        active_config->last_frame_time = pt_get_time();
+    }
 }
 
 PT_BOOL pt_use_gl_context(PtWindow *window) {
@@ -240,10 +268,96 @@ int pt_get_usable_yoffset(PtWindow *window) {
     return active_config->backend->get_usable_yoffset(window);
 }
 
+void pt_enable_throttle(int fps) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(fps > 0);
+
+    active_config->throttle_enabled = PT_TRUE;
+    active_config->target_fps = fps;
+    active_config->frame_duration = 1.0 / fps;
+    active_config->last_frame_time = pt_get_time();
+}
+
+void pt_disable_throttle() {
+    PT_ASSERT(active_config != NULL);
+
+    active_config->throttle_enabled = PT_FALSE;
+}
+
+void pt_sleep(double seconds) {
+    if (seconds <= 0.0) return;
+
+    #ifdef _WIN32
+        if (!high_precision_timer_init) {
+            timeBeginPeriod(1);
+            high_precision_timer_init = PT_TRUE;
+        }
+
+        double sleep_threshold = 0.002;
+
+        if (seconds > sleep_threshold) {
+            double sleep_time = seconds - sleep_threshold;
+            Sleep((DWORD)(sleep_time * 1000.0));
+
+            double start_time = pt_get_time();
+            while ((pt_get_time() - start_time) < sleep_threshold) {
+                if ((pt_get_time() - start_time) < sleep_threshold * 0.5) {
+                    Sleep(0);
+                }
+            }
+        } else {
+            double start_time = pt_get_time();
+            while ((pt_get_time() - start_time) < seconds) {
+            }
+        }
+    #else
+        struct timespec ts;
+        ts.tv_sec = (time_t)seconds;
+        ts.tv_nsec = (long)((seconds - ts.tv_sec) * 1000000000.0);
+        nanosleep(&ts, NULL);
+    #endif
+}
+
+double pt_get_time() {
+    #ifdef _WIN32
+        static LARGE_INTEGER frequency;
+        static PT_BOOL frequency_initialized = PT_FALSE;
+        LARGE_INTEGER counter;
+
+        if (!frequency_initialized) {
+            QueryPerformanceFrequency(&frequency);
+            frequency_initialized = PT_TRUE;
+        }
+
+        QueryPerformanceCounter(&counter);
+        return (double)counter.QuadPart / (double)frequency.QuadPart;
+    #else
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+    #endif
+}
+
 void pt_shutdown() {
     PT_ASSERT(active_config != NULL);
     PT_ASSERT(active_config->backend != NULL);
 
     active_config->backend->shutdown(active_config->backend);
+
+    #ifdef _WIN32
+        if (high_precision_timer_init) {
+            timeEndPeriod(1);
+            high_precision_timer_init = PT_FALSE;
+        }
+    #endif
+
     active_config = NULL;
+}
+
+void* pt_get_window_handle(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    return active_config->backend->get_handle(window);
 }

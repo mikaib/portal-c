@@ -16,7 +16,7 @@ static PT_BOOL pt_noop_init(PtBackend *backend, PtConfig *config) {
 
 static void pt_noop_shutdown(PtBackend *backend) {}
 
-static PtWindow* pt_noop_create_window(const char *title, int width, int height) {
+static PtWindow* pt_noop_create_window(const char *title, int width, int height, PtWindowFlags flags) {
     NoopWindow *noop = (NoopWindow*)PT_ALLOC(NoopWindow);
     noop->width = (width > 0) ? width : NOOP_WIDTH;
     noop->height = (height > 0) ? height : NOOP_HEIGHT;
@@ -73,6 +73,10 @@ int pt_noop_offset_zero(PtWindow *window) {
     return 0;
 }
 
+static void* pt_noop_get_handle(PtWindow *window) {
+    return NULL;
+}
+
 PtBackend* pt_noop_create() {
     PtBackend *backend = PT_ALLOC(PtBackend);
     backend->type = PT_BACKEND_NOOP;
@@ -81,6 +85,7 @@ PtBackend* pt_noop_create() {
 
     backend->init = pt_noop_init;
     backend->shutdown = pt_noop_shutdown;
+    backend->get_handle = pt_noop_get_handle;
     backend->create_window = pt_noop_create_window;
     backend->destroy_window = pt_noop_destroy_window;
     backend->poll_events = pt_noop_poll_events;

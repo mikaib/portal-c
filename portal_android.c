@@ -36,6 +36,7 @@ typedef struct {
     int usable_height;
     int usable_x_offset;
     int usable_y_offset;
+    PT_BOOL vsync_enabled;
 } PtAndroidData;
 
 static struct android_app* pt_internal_android_app = NULL;
@@ -263,7 +264,7 @@ PT_BOOL pt_android_init_egl() {
         return PT_FALSE;
     }
 
-    eglSwapInterval(android_data->display, 1);
+    eglSwapInterval(android_data->display, android_data->vsync_enabled ? 1 : 0);
 
     LOGI("EGL initialization successful");
     android_data->initialized = 1;
@@ -283,6 +284,7 @@ static void pt_android_handle_init(struct android_app* app) {
             android_data->context = EGL_NO_CONTEXT;
             android_data->display_width = 0;
             android_data->display_height = 0;
+            android_data->vsync_enabled = PT_TRUE;
         }
 
         android_data->native_window = app->window;
@@ -306,6 +308,7 @@ static void pt_android_handle_init(struct android_app* app) {
                                 android_data->surface,
                                 android_data->surface,
                                 android_data->context)) {
+                    eglSwapInterval(android_data->display, android_data->vsync_enabled ? 1 : 0);
                     LOGI("EGL context restored successfully");
                     android_data->initialized = 1;
                     android_data->pending_surface_destroy = 0;
@@ -327,8 +330,6 @@ static void pt_android_handle_init(struct android_app* app) {
 }
 
 static void pt_android_handle_cmd(struct android_app* app, int32_t cmd) {
-    LOGD("Handling command: %d", cmd);
-
     switch (cmd) {
        case APP_CMD_INIT_WINDOW:
             pt_android_handle_init(app);
@@ -450,6 +451,7 @@ void pt_android_set_native_window(ANativeWindow *native_window, ANativeActivity 
         android_data->context = EGL_NO_CONTEXT;
         android_data->display_width = 0;
         android_data->display_height = 0;
+        android_data->vsync_enabled = PT_TRUE;
     }
 
     android_data->native_window = native_window;
@@ -464,6 +466,16 @@ void pt_android_set_native_window(ANativeWindow *native_window, ANativeActivity 
     }
 }
 
+void* pt_android_get_handle(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+
+    if (android_data && android_data->native_window) {
+        return android_data->native_window;
+    }
+
+    return NULL;
+}
+
 PtBackend *pt_android_create() {
     PtBackend *backend = PT_ALLOC(PtBackend);
     backend->type = PT_BACKEND_ANDROID;
@@ -473,6 +485,7 @@ PtBackend *pt_android_create() {
 
     backend->init = pt_android_init;
     backend->shutdown = pt_android_shutdown;
+    backend->get_handle = pt_android_get_handle;
     backend->create_window = pt_android_create_window;
     backend->destroy_window = pt_android_destroy_window;
     backend->poll_events = pt_android_poll_events;
@@ -503,10 +516,22 @@ void pt_android_shutdown(PtBackend *backend) {
     PT_ASSERT(backend != NULL);
 }
 
-PtWindow* pt_android_create_window(const char *title, int width, int height) {
+PtWindow* pt_android_create_window(const char *title, int width, int height, PtWindowFlags flags) {
     PT_ASSERT(title != NULL);
 
     PtWindow *window = PT_ALLOC(PtWindow);
+
+    if (android_data == NULL) {
+        android_data = PT_ALLOC(PtAndroidData);
+        memset(android_data, 0, sizeof(PtAndroidData));
+        android_data->display = EGL_NO_DISPLAY;
+        android_data->surface = EGL_NO_SURFACE;
+        android_data->context = EGL_NO_CONTEXT;
+        android_data->display_width = 0;
+        android_data->display_height = 0;
+    }
+
+    android_data->vsync_enabled = (flags & PT_FLAG_VSYNC) != 0;
 
     window->handle = android_data;
     pt_internal_android_app->userData = window;
@@ -577,8 +602,12 @@ PT_BOOL pt_android_use_gl_context(PtWindow *window) {
     if (android_data && android_data->display != EGL_NO_DISPLAY &&
         android_data->context != EGL_NO_CONTEXT &&
         android_data->surface != EGL_NO_SURFACE) {
-        return eglMakeCurrent(android_data->display, android_data->surface,
+        PT_BOOL result = eglMakeCurrent(android_data->display, android_data->surface,
                              android_data->surface, android_data->context);
+        if (result) {
+            eglSwapInterval(android_data->display, android_data->vsync_enabled ? 1 : 0);
+        }
+        return result;
     }
 
     return PT_FALSE;
