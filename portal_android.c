@@ -349,7 +349,7 @@ void pt_android_internal_poll() {
     int events;
     struct android_poll_source* source;
 
-    while (ALooper_pollAll(0, NULL, &events, (void**)&source) >= 0) {
+    while (ALooper_pollOnce(0, NULL, &events, (void**)&source) > ALOOPER_POLL_TIMEOUT) {
         if (source != NULL) {
             source->process(pt_internal_android_app, source);
         }
