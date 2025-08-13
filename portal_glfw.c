@@ -81,25 +81,7 @@ PtWindow* pt_glfw_create_window(const char *title, int width, int height, PtWind
 void* pt_glfw_get_handle(PtWindow *window) {
     PT_ASSERT(window->handle != NULL);
 
-    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
-    GLFWwindow* glfw_window = (GLFWwindow*)handle->glfw;
-
-#ifdef _WIN32
-    #define GLFW_EXPOSE_NATIVE_WIN32
-    #include "glfw/include/GLFW/glfw3native.h"
-    return glfwGetWin32Window(glfw_window);
-#elif defined(__linux__)
-    #define GLFW_EXPOSE_NATIVE_X11
-    #include "glfw/include/GLFW/glfw3native.h"
-    return (void*)(uintptr_t)glfwGetX11Window(glfw_window);
-#elif defined(__APPLE__)
-    #define GLFW_EXPOSE_NATIVE_COCOA
-    #include "glfw/include/GLFW/glfw3native.h"
-    return glfwGetCocoaWindow(glfw_window);
-#else
-    // Fallback to GLFW window handle if no native function available
-    return glfw_window;
-#endif
+    return NULL;
 }
 
 void pt_glfw_cb_mouse_button(GLFWwindow *glfw_window, int button, int action) {
