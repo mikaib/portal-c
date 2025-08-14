@@ -101,14 +101,14 @@ typedef struct PtInputEventData PtInputEventData;
 
 typedef struct PtConfig {
     PtBackend *backend;
-    PT_BOOL throttle_enabled;
-    int target_fps;
-    double last_frame_time;
-    double frame_duration;
 } PtConfig;
 
 typedef struct PtWindow {
     void *handle;
+    PT_BOOL throttle_enabled;
+    int target_fps;
+    double last_frame_time;
+    double frame_duration;
 } PtWindow;
 
 typedef struct PtInputEventKeyData {
@@ -235,8 +235,8 @@ PtInputEventData pt_create_input_event_data();
 PT_BOOL pt_use_gl_context(PtWindow *window);
 
 // throttling
-void pt_enable_throttle(int fps);
-void pt_disable_throttle();
+void pt_enable_throttle(PtWindow *window, int fps);
+void pt_disable_throttle(PtWindow *window);
 void pt_sleep(double seconds);
 double pt_get_time();
 

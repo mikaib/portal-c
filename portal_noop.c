@@ -24,6 +24,10 @@ static PtWindow* pt_noop_create_window(const char *title, int width, int height,
 
     PtWindow *window = (PtWindow*)PT_ALLOC(PtWindow);
     window->handle = noop;
+    window->throttle_enabled = PT_FALSE;
+    window->target_fps = 60;
+    window->last_frame_time = 0.0;
+    window->frame_duration = 1.0 / 60.0;
 
     return window;
 }

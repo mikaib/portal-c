@@ -547,6 +547,11 @@ PtWindow* pt_android_create_window(const char *title, int width, int height, PtW
     android_data->vsync_enabled = (flags & PT_FLAG_VSYNC) != 0;
 
     window->handle = android_data;
+    window->throttle_enabled = PT_FALSE;
+    window->target_fps = 60;
+    window->last_frame_time = 0.0;
+    window->frame_duration = 1.0 / 60.0;
+
     pt_internal_android_app->userData = window;
 
     return window;

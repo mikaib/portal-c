@@ -29,10 +29,6 @@ static PT_BOOL high_precision_timer_init = PT_FALSE;
 PtConfig *pt_create_config() {
     PtConfig *config = PT_ALLOC(PtConfig);
     config->backend = NULL;
-    config->throttle_enabled = PT_FALSE;
-    config->target_fps = 60;
-    config->last_frame_time = 0.0;
-    config->frame_duration = 1.0 / 60.0;
 
     return config;
 }
@@ -144,7 +140,8 @@ PtWindow* pt_create_window(const char *title, int width, int height, PtWindowFla
     PT_ASSERT(active_config != NULL);
     PT_ASSERT(active_config->backend != NULL);
 
-    return active_config->backend->create_window(title, width, height, flags);
+    PtWindow *window = active_config->backend->create_window(title, width, height, flags);
+    return window;
 }
 
 void pt_destroy_window(PtWindow *window) {
@@ -164,19 +161,20 @@ void pt_poll_events(PtWindow *window) {
 void pt_swap_buffers(PtWindow *window) {
     PT_ASSERT(active_config != NULL);
     PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
 
     active_config->backend->swap_buffers(window);
 
-    if (active_config->throttle_enabled) {
+    if (window->throttle_enabled) {
         double current_time = pt_get_time();
-        double elapsed = current_time - active_config->last_frame_time;
-        double sleep_time = active_config->frame_duration - elapsed;
+        double elapsed = current_time - window->last_frame_time;
+        double sleep_time = window->frame_duration - elapsed;
 
         if (sleep_time > 0.0) {
             pt_sleep(sleep_time);
         }
 
-        active_config->last_frame_time = pt_get_time();
+        window->last_frame_time = pt_get_time();
     }
 }
 
@@ -268,20 +266,20 @@ int pt_get_usable_yoffset(PtWindow *window) {
     return active_config->backend->get_usable_yoffset(window);
 }
 
-void pt_enable_throttle(int fps) {
-    PT_ASSERT(active_config != NULL);
+void pt_enable_throttle(PtWindow *window, int fps) {
+    PT_ASSERT(window != NULL);
     PT_ASSERT(fps > 0);
 
-    active_config->throttle_enabled = PT_TRUE;
-    active_config->target_fps = fps;
-    active_config->frame_duration = 1.0 / fps;
-    active_config->last_frame_time = pt_get_time();
+    window->throttle_enabled = PT_TRUE;
+    window->target_fps = fps;
+    window->frame_duration = 1.0 / fps;
+    window->last_frame_time = pt_get_time();
 }
 
-void pt_disable_throttle() {
-    PT_ASSERT(active_config != NULL);
+void pt_disable_throttle(PtWindow *window) {
+    PT_ASSERT(window != NULL);
 
-    active_config->throttle_enabled = PT_FALSE;
+    window->throttle_enabled = PT_FALSE;
 }
 
 void pt_sleep(double seconds) {

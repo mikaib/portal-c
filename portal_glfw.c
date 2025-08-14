@@ -136,6 +136,10 @@ PtWindow* pt_glfw_create_window(const char *title, int width, int height, PtWind
     glfwGetFramebufferSize((GLFWwindow*)handle->glfw, &handle->framebuffer_width, &handle->framebuffer_height);
     
     window->handle = handle;
+    window->throttle_enabled = PT_FALSE;
+    window->target_fps = 60;
+    window->last_frame_time = 0.0;
+    window->frame_duration = 1.0 / 60.0;
 
     glfwSetWindowUserPointer((GLFWwindow*)handle->glfw, window);
     glfwSetMouseButtonCallback((GLFWwindow*)handle->glfw, (GLFWmousebuttonfun)pt_glfw_cb_mouse_button);
