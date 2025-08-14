@@ -40,6 +40,9 @@ typedef enum {
 
 typedef enum {
     PT_CAPABILITY_CREATE_WINDOW = 1 << 0,
+    PT_CAPABILITY_WINDOW_SIZE = 1 << 1,
+    PT_CAPABILITY_WINDOW_POSITION = 1 << 2,
+    PT_CAPABILITY_WINDOW_VIDEO_MODE = 1 << 3
 } PtCapability;
 
 typedef enum {
@@ -68,6 +71,13 @@ typedef enum {
     PT_FLAG_NONE = 0,
     PT_FLAG_VSYNC = 1,
 } PtWindowFlags;
+
+typedef enum {
+    PT_VIDEO_MODE_FULLSCREEN = 0,
+    PT_VIDEO_MODE_WINDOWED = 1,
+    PT_VIDEO_MODE_BORDERLESS = 2,
+    PT_VIDEO_MODE_MAXIMIZED = 3,
+} PtVideoMode;
 
 typedef struct PtConfig PtConfig;
 typedef struct PtBackend PtBackend;
@@ -140,6 +150,9 @@ typedef struct PtBackend {
     void (*destroy_window)(PtWindow *window);
     void (*poll_events)(PtWindow *window);
     void (*swap_buffers)(PtWindow *window);
+    void (*set_window_title)(PtWindow *window, const char *title);
+    void (*set_window_size)(PtWindow *window, int width, int height);
+    void (*set_video_mode)(PtWindow *window, PtVideoMode mode);
     int (*get_window_width)(PtWindow *window);
     int (*get_window_height)(PtWindow *window);
     int (*get_framebuffer_width)(PtWindow *window);
@@ -178,6 +191,9 @@ void pt_destroy_window(PtWindow *window);
 void pt_poll_events(PtWindow *window);
 void pt_swap_buffers(PtWindow *window);
 void* pt_get_window_handle(PtWindow *window); // os-handle
+void pt_set_window_title(PtWindow *window, const char *title);
+void pt_set_window_size(PtWindow *window, int width, int height);
+void pt_set_video_mode(PtWindow *window, PtVideoMode mode);
 int pt_get_window_width(PtWindow *window);
 int pt_get_window_height(PtWindow *window);
 int pt_get_framebuffer_width(PtWindow *window);

@@ -17,6 +17,9 @@ PtWindow* pt_noop_create_window(const char *title, int width, int height, PtWind
 void pt_noop_destroy_window(PtWindow *window);
 void pt_noop_poll_events(PtWindow *window);
 void pt_noop_swap_buffers(PtWindow *window);
+void pt_noop_set_window_title(PtWindow *window, const char *title);
+void pt_noop_set_window_size(PtWindow *window, int width, int height);
+void pt_noop_set_video_mode(PtWindow *window, PtVideoMode mode);
 void* pt_noop_get_handle(PtWindow *window);
 int pt_noop_get_window_width(PtWindow *window);
 int pt_noop_get_window_height(PtWindow *window);

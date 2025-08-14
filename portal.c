@@ -361,3 +361,36 @@ void* pt_get_window_handle(PtWindow *window) {
 
     return active_config->backend->get_handle(window);
 }
+
+void pt_set_window_title(PtWindow *window, const char *title) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+    PT_ASSERT(title != NULL);
+
+    if (active_config->backend->set_window_title) {
+        active_config->backend->set_window_title(window, title);
+    }
+}
+
+void pt_set_window_size(PtWindow *window, int width, int height) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+    PT_ASSERT(width > 0);
+    PT_ASSERT(height > 0);
+
+    if (active_config->backend->set_window_size) {
+        active_config->backend->set_window_size(window, width, height);
+    }
+}
+
+void pt_set_video_mode(PtWindow *window, PtVideoMode mode) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->set_video_mode) {
+        active_config->backend->set_video_mode(window, mode);
+    }
+}

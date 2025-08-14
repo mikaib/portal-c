@@ -7,7 +7,7 @@
 PtBackend *pt_glfw_create() {
     PtBackend *backend = PT_ALLOC(PtBackend);
     backend->type = PT_BACKEND_GLFW;
-    backend->capabilities = PT_CAPABILITY_CREATE_WINDOW;
+    backend->capabilities = PT_CAPABILITY_CREATE_WINDOW | PT_CAPABILITY_WINDOW_SIZE | PT_CAPABILITY_WINDOW_VIDEO_MODE;
     backend->kind = PT_BACKEND_KIND_DESKTOP;
     backend->input_event_count = 0;
 
@@ -18,6 +18,9 @@ PtBackend *pt_glfw_create() {
     backend->destroy_window = pt_glfw_destroy_window;
     backend->poll_events = pt_glfw_poll_events;
     backend->swap_buffers = pt_glfw_swap_buffers;
+    backend->set_window_title = pt_glfw_set_window_title;
+    backend->set_window_size = pt_glfw_set_window_size;
+    backend->set_video_mode = pt_glfw_set_video_mode;
     backend->get_window_width = pt_glfw_get_window_width;
     backend->get_window_height = pt_glfw_get_window_height;
     backend->get_framebuffer_width = pt_glfw_get_framebuffer_width;
@@ -238,4 +241,61 @@ int pt_glfw_get_framebuffer_height(PtWindow *window) {
 
 int pt_glfw_offset_zero(PtWindow *window) {
     return 0;
+}
+
+void pt_glfw_set_window_title(PtWindow *window, const char *title) {
+    PT_ASSERT(window != NULL);
+    PT_ASSERT(window->handle != NULL);
+    PT_ASSERT(title != NULL);
+
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    glfwSetWindowTitle((GLFWwindow*)handle->glfw, title);
+}
+
+void pt_glfw_set_window_size(PtWindow *window, int width, int height) {
+    PT_ASSERT(window != NULL);
+    PT_ASSERT(window->handle != NULL);
+    PT_ASSERT(width > 0);
+    PT_ASSERT(height > 0);
+
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    glfwSetWindowSize((GLFWwindow*)handle->glfw, width, height);
+    handle->window_width = width;
+    handle->window_height = height;
+}
+
+void pt_glfw_set_video_mode(PtWindow *window, PtVideoMode mode) {
+    PT_ASSERT(window != NULL);
+    PT_ASSERT(window->handle != NULL);
+
+    PtGlfwHandle *handle = (PtGlfwHandle*)window->handle;
+    GLFWwindow *glfw_window = (GLFWwindow*)handle->glfw;
+
+    switch (mode) {
+        case PT_VIDEO_MODE_WINDOWED:
+            if (glfwGetWindowMonitor(glfw_window) != NULL) {
+                glfwSetWindowMonitor(glfw_window, NULL, 100, 100, handle->window_width, handle->window_height, GLFW_DONT_CARE);
+            }
+            break;
+        case PT_VIDEO_MODE_FULLSCREEN:
+            {
+                GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+                const GLFWvidmode *mode_info = glfwGetVideoMode(monitor);
+                glfwSetWindowMonitor(glfw_window, monitor, 0, 0, mode_info->width, mode_info->height, mode_info->refreshRate);
+            }
+            break;
+        case PT_VIDEO_MODE_BORDERLESS:
+            {
+                GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+                const GLFWvidmode *mode_info = glfwGetVideoMode(monitor);
+                glfwSetWindowMonitor(glfw_window, NULL, 0, 0, mode_info->width, mode_info->height, GLFW_DONT_CARE);
+            }
+            break;
+        case PT_VIDEO_MODE_MAXIMIZED:
+            if (glfwGetWindowMonitor(glfw_window) != NULL) {
+                glfwSetWindowMonitor(glfw_window, NULL, 100, 100, handle->window_width, handle->window_height, GLFW_DONT_CARE);
+            }
+            glfwMaximizeWindow(glfw_window);
+            break;
+    }
 }

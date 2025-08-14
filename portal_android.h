@@ -22,6 +22,9 @@ PtWindow* pt_android_create_window(const char *title, int width, int height, PtW
 void pt_android_destroy_window(PtWindow *window);
 void pt_android_poll_events(PtWindow *window);
 void pt_android_swap_buffers(PtWindow *window);
+void pt_android_set_window_title(PtWindow *window, const char *title);
+void pt_android_set_window_size(PtWindow *window, int width, int height);
+void pt_android_set_video_mode(PtWindow *window, PtVideoMode mode);
 void* pt_android_get_handle(PtWindow *window);
 int pt_android_get_window_width(PtWindow *window);
 int pt_android_get_window_height(PtWindow *window);

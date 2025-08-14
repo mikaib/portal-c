@@ -32,6 +32,9 @@ PtWindow* pt_glfw_create_window(const char *title, int width, int height, PtWind
 void pt_glfw_destroy_window(PtWindow *window);
 void pt_glfw_poll_events(PtWindow *window);
 void pt_glfw_swap_buffers(PtWindow *window);
+void pt_glfw_set_window_title(PtWindow *window, const char *title);
+void pt_glfw_set_window_size(PtWindow *window, int width, int height);
+void pt_glfw_set_video_mode(PtWindow *window, PtVideoMode mode);
 void* pt_glfw_get_handle(PtWindow *window);
 int pt_glfw_get_window_width(PtWindow *window);
 int pt_glfw_get_window_height(PtWindow *window);
