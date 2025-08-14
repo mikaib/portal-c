@@ -490,6 +490,9 @@ PtBackend *pt_android_create() {
     backend->destroy_window = pt_android_destroy_window;
     backend->poll_events = pt_android_poll_events;
     backend->swap_buffers = pt_android_swap_buffers;
+    backend->set_window_title = pt_android_set_window_title;
+    backend->set_window_size = pt_android_set_window_size;
+    backend->set_video_mode = pt_android_set_video_mode;
     backend->get_window_width = pt_android_get_window_width;
     backend->get_window_height = pt_android_get_window_height;
     backend->get_framebuffer_width = pt_android_get_framebuffer_width;
@@ -812,4 +815,25 @@ int pt_android_get_usable_framebuffer_yoffset(PtWindow *window) {
     }
 
     return 0;
+}
+
+void pt_android_set_window_title(PtWindow *window, const char *title) {
+    PT_ASSERT(window != NULL);
+    PT_ASSERT(title != NULL);
+
+    // noop
+}
+
+void pt_android_set_window_size(PtWindow *window, int width, int height) {
+    PT_ASSERT(window != NULL);
+    PT_ASSERT(width > 0);
+    PT_ASSERT(height > 0);
+
+    // noop
+}
+
+void pt_android_set_video_mode(PtWindow *window, PtVideoMode mode) {
+    PT_ASSERT(window != NULL);
+
+    // noop
 }

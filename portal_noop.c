@@ -77,10 +77,26 @@ static void* pt_noop_get_handle(PtWindow *window) {
     return NULL;
 }
 
+static void pt_noop_set_window_title(PtWindow *window, const char *title) {
+    // No-op implementation
+}
+
+static void pt_noop_set_window_size(PtWindow *window, int width, int height) {
+    if (!window || !window->handle) return;
+
+    NoopWindow *noop = (NoopWindow*)window->handle;
+    noop->width = width;
+    noop->height = height;
+}
+
+static void pt_noop_set_video_mode(PtWindow *window, PtVideoMode mode) {
+    // No-op implementation
+}
+
 PtBackend* pt_noop_create() {
     PtBackend *backend = PT_ALLOC(PtBackend);
     backend->type = PT_BACKEND_NOOP;
-    backend->capabilities = PT_CAPABILITY_CREATE_WINDOW;
+    backend->capabilities = PT_CAPABILITY_CREATE_WINDOW | PT_CAPABILITY_WINDOW_SIZE;
     backend->kind = PT_BACKEND_KIND_HEADLESS;
 
     backend->init = pt_noop_init;
@@ -90,6 +106,9 @@ PtBackend* pt_noop_create() {
     backend->destroy_window = pt_noop_destroy_window;
     backend->poll_events = pt_noop_poll_events;
     backend->swap_buffers = pt_noop_swap_buffers;
+    backend->set_window_title = pt_noop_set_window_title;
+    backend->set_window_size = pt_noop_set_window_size;
+    backend->set_video_mode = pt_noop_set_video_mode;
     backend->get_window_width = pt_noop_get_window_width;
     backend->get_window_height = pt_noop_get_window_height;
     backend->get_framebuffer_width = pt_noop_get_framebuffer_width;
