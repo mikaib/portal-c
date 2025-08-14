@@ -281,7 +281,7 @@ void pt_glfw_set_video_mode(PtWindow *window, PtVideoMode mode) {
             {
                 GLFWmonitor *monitor = glfwGetPrimaryMonitor();
                 const GLFWvidmode *mode_info = glfwGetVideoMode(monitor);
-                glfwSetWindowMonitor(glfw_window, monitor, 0, 0, mode_info->width, mode_info->height, mode_info->refreshRate);
+                glfwSetWindowMonitor(glfw_window, monitor, 0, 0, mode_info->width, mode_info->height, GLFW_DONT_CARE);
             }
             break;
         case PT_VIDEO_MODE_BORDERLESS:
