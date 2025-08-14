@@ -493,6 +493,12 @@ PtBackend *pt_android_create() {
     backend->set_window_title = pt_android_set_window_title;
     backend->set_window_size = pt_android_set_window_size;
     backend->set_video_mode = pt_android_set_video_mode;
+    backend->show_window = pt_android_show_window;
+    backend->hide_window = pt_android_hide_window;
+    backend->minimize_window = pt_android_minimize_window;
+    backend->maximize_window = pt_android_maximize_window;
+    backend->restore_window = pt_android_restore_window;
+    backend->focus_window = pt_android_focus_window;
     backend->get_window_width = pt_android_get_window_width;
     backend->get_window_height = pt_android_get_window_height;
     backend->get_framebuffer_width = pt_android_get_framebuffer_width;
@@ -501,6 +507,10 @@ PtBackend *pt_android_create() {
     backend->get_usable_height = pt_android_get_usable_framebuffer_height;
     backend->get_usable_xoffset = pt_android_get_usable_framebuffer_xoffset;
     backend->get_usable_yoffset = pt_android_get_usable_framebuffer_yoffset;
+    backend->is_window_maximized = pt_android_is_window_maximized;
+    backend->is_window_minimized = pt_android_is_window_minimized;
+    backend->is_window_focused = pt_android_is_window_focused;
+    backend->is_window_visible = pt_android_is_window_visible;
     backend->use_gl_context = pt_android_use_gl_context;
     backend->should_window_close = pt_android_should_window_close;
 
@@ -820,7 +830,6 @@ int pt_android_get_usable_framebuffer_yoffset(PtWindow *window) {
 void pt_android_set_window_title(PtWindow *window, const char *title) {
     PT_ASSERT(window != NULL);
     PT_ASSERT(title != NULL);
-
     // noop
 }
 
@@ -828,12 +837,60 @@ void pt_android_set_window_size(PtWindow *window, int width, int height) {
     PT_ASSERT(window != NULL);
     PT_ASSERT(width > 0);
     PT_ASSERT(height > 0);
-
     // noop
 }
 
 void pt_android_set_video_mode(PtWindow *window, PtVideoMode mode) {
     PT_ASSERT(window != NULL);
-
     // noop
+}
+
+void pt_android_show_window(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    // noop
+}
+
+void pt_android_hide_window(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    // unsupported
+}
+
+void pt_android_minimize_window(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    // unsupported
+}
+
+void pt_android_maximize_window(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    // unsupported
+}
+
+void pt_android_restore_window(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    // unsupported
+}
+
+void pt_android_focus_window(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    // unsupported
+}
+
+PT_BOOL pt_android_is_window_maximized(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    return PT_TRUE; // sane default
+}
+
+PT_BOOL pt_android_is_window_minimized(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    return PT_FALSE; // sane default
+}
+
+PT_BOOL pt_android_is_window_focused(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    return PT_TRUE; // sane default
+}
+
+PT_BOOL pt_android_is_window_visible(PtWindow *window) {
+    PT_ASSERT(window != NULL);
+    return PT_TRUE; // sane default
 }

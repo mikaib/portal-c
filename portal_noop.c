@@ -77,9 +77,7 @@ static void* pt_noop_get_handle(PtWindow *window) {
     return NULL;
 }
 
-static void pt_noop_set_window_title(PtWindow *window, const char *title) {
-    // No-op implementation
-}
+static void pt_noop_set_window_title(PtWindow *window, const char *title) {}
 
 static void pt_noop_set_window_size(PtWindow *window, int width, int height) {
     if (!window || !window->handle) return;
@@ -89,8 +87,34 @@ static void pt_noop_set_window_size(PtWindow *window, int width, int height) {
     noop->height = height;
 }
 
-static void pt_noop_set_video_mode(PtWindow *window, PtVideoMode mode) {
-    // No-op implementation
+static void pt_noop_set_video_mode(PtWindow *window, PtVideoMode mode) {}
+
+static void pt_noop_show_window(PtWindow *window) {}
+
+static void pt_noop_hide_window(PtWindow *window) {}
+
+static void pt_noop_minimize_window(PtWindow *window) {}
+
+static void pt_noop_maximize_window(PtWindow *window) {}
+
+static void pt_noop_restore_window(PtWindow *window) {}
+
+static void pt_noop_focus_window(PtWindow *window) {}
+
+static PT_BOOL pt_noop_is_window_maximized(PtWindow *window) {
+    return PT_FALSE;
+}
+
+static PT_BOOL pt_noop_is_window_minimized(PtWindow *window) {
+    return PT_FALSE;
+}
+
+static PT_BOOL pt_noop_is_window_focused(PtWindow *window) {
+    return PT_TRUE; // sane default
+}
+
+static PT_BOOL pt_noop_is_window_visible(PtWindow *window) {
+    return PT_TRUE; // sane default
 }
 
 PtBackend* pt_noop_create() {
@@ -109,6 +133,12 @@ PtBackend* pt_noop_create() {
     backend->set_window_title = pt_noop_set_window_title;
     backend->set_window_size = pt_noop_set_window_size;
     backend->set_video_mode = pt_noop_set_video_mode;
+    backend->show_window = pt_noop_show_window;
+    backend->hide_window = pt_noop_hide_window;
+    backend->minimize_window = pt_noop_minimize_window;
+    backend->maximize_window = pt_noop_maximize_window;
+    backend->restore_window = pt_noop_restore_window;
+    backend->focus_window = pt_noop_focus_window;
     backend->get_window_width = pt_noop_get_window_width;
     backend->get_window_height = pt_noop_get_window_height;
     backend->get_framebuffer_width = pt_noop_get_framebuffer_width;
@@ -117,6 +147,10 @@ PtBackend* pt_noop_create() {
     backend->get_usable_height = pt_noop_get_framebuffer_height;
     backend->get_usable_xoffset = pt_noop_offset_zero;
     backend->get_usable_yoffset = pt_noop_offset_zero;
+    backend->is_window_maximized = pt_noop_is_window_maximized;
+    backend->is_window_minimized = pt_noop_is_window_minimized;
+    backend->is_window_focused = pt_noop_is_window_focused;
+    backend->is_window_visible = pt_noop_is_window_visible;
     backend->use_gl_context = pt_noop_use_gl_context;
     backend->should_window_close = pt_noop_should_window_close;
 

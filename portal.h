@@ -69,7 +69,18 @@ typedef enum {
 
 typedef enum {
     PT_FLAG_NONE = 0,
-    PT_FLAG_VSYNC = 1,
+    PT_FLAG_VSYNC = 1 << 0,
+    PT_FLAG_RESIZABLE = 1 << 1,
+    PT_FLAG_MAXIMIZED = 1 << 2,
+    PT_FLAG_MINIMIZED = 1 << 3,
+    PT_FLAG_HIDDEN = 1 << 4,
+    PT_FLAG_ALWAYS_ON_TOP = 1 << 5,
+    PT_FLAG_NO_TITLEBAR = 1 << 6,
+    PT_FLAG_TRANSPARENT = 1 << 7,
+    PT_FLAG_FULLSCREEN = 1 << 8,
+    PT_FLAG_BORDERLESS = 1 << 9,
+    PT_FLAG_CENTERED = 1 << 10,
+    PT_FLAG_NO_FOCUS = 1 << 11,
 } PtWindowFlags;
 
 typedef enum {
@@ -153,6 +164,12 @@ typedef struct PtBackend {
     void (*set_window_title)(PtWindow *window, const char *title);
     void (*set_window_size)(PtWindow *window, int width, int height);
     void (*set_video_mode)(PtWindow *window, PtVideoMode mode);
+    void (*show_window)(PtWindow *window);
+    void (*hide_window)(PtWindow *window);
+    void (*minimize_window)(PtWindow *window);
+    void (*maximize_window)(PtWindow *window);
+    void (*restore_window)(PtWindow *window);
+    void (*focus_window)(PtWindow *window);
     int (*get_window_width)(PtWindow *window);
     int (*get_window_height)(PtWindow *window);
     int (*get_framebuffer_width)(PtWindow *window);
@@ -162,6 +179,10 @@ typedef struct PtBackend {
     int (*get_usable_xoffset)(PtWindow *window);
     int (*get_usable_yoffset)(PtWindow *window);
     PT_BOOL (*should_window_close)(PtWindow *window);
+    PT_BOOL (*is_window_maximized)(PtWindow *window);
+    PT_BOOL (*is_window_minimized)(PtWindow *window);
+    PT_BOOL (*is_window_focused)(PtWindow *window);
+    PT_BOOL (*is_window_visible)(PtWindow *window);
 
     // lifecycle
     void (*activate)(PtWindow *window);
@@ -218,6 +239,20 @@ void pt_enable_throttle(int fps);
 void pt_disable_throttle();
 void pt_sleep(double seconds);
 double pt_get_time();
+
+// Window state management
+void pt_show_window(PtWindow *window);
+void pt_hide_window(PtWindow *window);
+void pt_minimize_window(PtWindow *window);
+void pt_maximize_window(PtWindow *window);
+void pt_restore_window(PtWindow *window);
+void pt_focus_window(PtWindow *window);
+
+// Window state queries
+PT_BOOL pt_is_window_maximized(PtWindow *window);
+PT_BOOL pt_is_window_minimized(PtWindow *window);
+PT_BOOL pt_is_window_focused(PtWindow *window);
+PT_BOOL pt_is_window_visible(PtWindow *window);
 
 #ifdef __cplusplus
 }

@@ -48,6 +48,20 @@ int pt_android_get_usable_framebuffer_height(PtWindow *window);
 int pt_android_get_usable_framebuffer_xoffset(PtWindow *window);
 int pt_android_get_usable_framebuffer_yoffset(PtWindow *window);
 
+// window state management
+void pt_android_show_window(PtWindow *window);
+void pt_android_hide_window(PtWindow *window);
+void pt_android_minimize_window(PtWindow *window);
+void pt_android_maximize_window(PtWindow *window);
+void pt_android_restore_window(PtWindow *window);
+void pt_android_focus_window(PtWindow *window);
+
+// window state queries
+PT_BOOL pt_android_is_window_maximized(PtWindow *window);
+PT_BOOL pt_android_is_window_minimized(PtWindow *window);
+PT_BOOL pt_android_is_window_focused(PtWindow *window);
+PT_BOOL pt_android_is_window_visible(PtWindow *window);
+
 #ifdef __cplusplus
 }
 #endif

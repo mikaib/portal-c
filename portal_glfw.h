@@ -42,6 +42,20 @@ int pt_glfw_get_framebuffer_width(PtWindow *window);
 int pt_glfw_get_framebuffer_height(PtWindow *window);
 PT_BOOL pt_glfw_should_window_close(PtWindow *window);
 
+// window state management
+void pt_glfw_show_window(PtWindow *window);
+void pt_glfw_hide_window(PtWindow *window);
+void pt_glfw_minimize_window(PtWindow *window);
+void pt_glfw_maximize_window(PtWindow *window);
+void pt_glfw_restore_window(PtWindow *window);
+void pt_glfw_focus_window(PtWindow *window);
+
+// window state queries
+PT_BOOL pt_glfw_is_window_maximized(PtWindow *window);
+PT_BOOL pt_glfw_is_window_minimized(PtWindow *window);
+PT_BOOL pt_glfw_is_window_focused(PtWindow *window);
+PT_BOOL pt_glfw_is_window_visible(PtWindow *window);
+
 // callbacks
 void pt_glfw_cb_mouse_button(GLFWwindow *glfw_window, int button, int action);
 void pt_glfw_cb_mouse_move(GLFWwindow *glfw_window, double x, double y);

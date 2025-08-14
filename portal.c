@@ -394,3 +394,107 @@ void pt_set_video_mode(PtWindow *window, PtVideoMode mode) {
         active_config->backend->set_video_mode(window, mode);
     }
 }
+
+void pt_show_window(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->show_window) {
+        active_config->backend->show_window(window);
+    }
+}
+
+void pt_hide_window(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->hide_window) {
+        active_config->backend->hide_window(window);
+    }
+}
+
+void pt_minimize_window(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->minimize_window) {
+        active_config->backend->minimize_window(window);
+    }
+}
+
+void pt_maximize_window(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->maximize_window) {
+        active_config->backend->maximize_window(window);
+    }
+}
+
+void pt_restore_window(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->restore_window) {
+        active_config->backend->restore_window(window);
+    }
+}
+
+void pt_focus_window(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->focus_window) {
+        active_config->backend->focus_window(window);
+    }
+}
+
+PT_BOOL pt_is_window_maximized(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->is_window_maximized) {
+        return active_config->backend->is_window_maximized(window);
+    }
+    return PT_FALSE;
+}
+
+PT_BOOL pt_is_window_minimized(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->is_window_minimized) {
+        return active_config->backend->is_window_minimized(window);
+    }
+    return PT_FALSE;
+}
+
+PT_BOOL pt_is_window_focused(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->is_window_focused) {
+        return active_config->backend->is_window_focused(window);
+    }
+    return PT_FALSE;
+}
+
+PT_BOOL pt_is_window_visible(PtWindow *window) {
+    PT_ASSERT(active_config != NULL);
+    PT_ASSERT(active_config->backend != NULL);
+    PT_ASSERT(window != NULL);
+
+    if (active_config->backend->is_window_visible) {
+        return active_config->backend->is_window_visible(window);
+    }
+    return PT_FALSE;
+}

@@ -33,6 +33,20 @@ int pt_noop_offset_zero(PtWindow *window);
 // context
 PT_BOOL pt_noop_use_gl_context(PtWindow *window);
 
+// window state management
+void pt_noop_show_window(PtWindow *window);
+void pt_noop_hide_window(PtWindow *window);
+void pt_noop_minimize_window(PtWindow *window);
+void pt_noop_maximize_window(PtWindow *window);
+void pt_noop_restore_window(PtWindow *window);
+void pt_noop_focus_window(PtWindow *window);
+
+// window state queries
+PT_BOOL pt_noop_is_window_maximized(PtWindow *window);
+PT_BOOL pt_noop_is_window_minimized(PtWindow *window);
+PT_BOOL pt_noop_is_window_focused(PtWindow *window);
+PT_BOOL pt_noop_is_window_visible(PtWindow *window);
+
 #ifdef __cplusplus
 }
 #endif
