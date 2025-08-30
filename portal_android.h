@@ -6,6 +6,7 @@
 #include <android/native_activity.h>
 #include <android_native_app_glue.h>
 #include <android/input.h>
+#include <jni.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -47,6 +48,16 @@ int pt_android_get_usable_framebuffer_width(PtWindow *window);
 int pt_android_get_usable_framebuffer_height(PtWindow *window);
 int pt_android_get_usable_framebuffer_xoffset(PtWindow *window);
 int pt_android_get_usable_framebuffer_yoffset(PtWindow *window);
+
+// Display info functions
+void pt_android_get_display_info();
+
+// JNI callbacks
+JNIEXPORT void JNICALL Java_sh_mki_genesis_MainActivity_nativeOnDisplayInfoReady(
+    JNIEnv* env, jobject thiz,
+    jint displayWidth, jint displayHeight,
+    jint usableWidth, jint usableHeight,
+    jint usableXOffset, jint usableYOffset);
 
 // window state management
 void pt_android_show_window(PtWindow *window);
